@@ -163,7 +163,7 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 		}
 
 		ComputerLauncher launcher = new EcsDockerComputerLauncher(this, result, containerStartTimeout);
-
+		logger.info("After computer launcher");
 		// Build a description up:
 		// String nodeDescription = "Docker Node [" + image + " on ";
 		// try {

@@ -105,11 +105,13 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 		if (!CommonUtils.waitForPort(host, port, containerStartTimeout)) {
 		    throw new RuntimeException("Port took too long to become available");
 		}
+		logger.info("template.getCredentialsId: " + template.getCredentialsId());
 
 		StandardUsernameCredentials credentials = SSHLauncher
 				.lookupSystemCredentials(template.getCredentialsId());
 
 		// return new SSHLauncher();
+		logger.info("credentials: " + credentials);
 		return new SSHLauncher(host, port, credentials, "", // jvmOptions
 				"", // javaPath,
 				"", // prefixStartSlaveCmd
