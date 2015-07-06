@@ -61,10 +61,10 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 		AwsCloud cloud = template.getParent();
 		
 		// Wait until container's status becomes RUNNING
-		Container ctn = AWSUtils.waitForContainer(cloud, taskArn, containerStartTimeout);
-		if (!ctn.getLastStatus().equals("RUNNING")) {
+		if (!AWSUtils.waitForContainer(cloud, taskArn, containerStartTimeout, "RUNNING")) {
 			throw new RuntimeException("Container takes too long time to start");
 		}
+		Container ctn = AWSUtils.getContainer(cloud, taskArn);
 
 		List<NetworkBinding> nbs = ctn.getNetworkBindings();
 		logger.info("Network binding size = " + nbs.size());
@@ -81,7 +81,7 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 
 		if (host == "" || port == -1) {
 			logger.warning("Failed to connect to the container");
-			AWSUtils.stopTask(cloud, taskArn, template.getParent().isSameVPC(), containerStartTimeout);
+			AWSUtils.stopTask(cloud, taskArn, template.getParent().isSameVPC());
 			throw new RuntimeException("Cannot determine host/port to SSH into");
 		}
 
@@ -102,7 +102,7 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 
 		logger.info("Creating slave SSH launcher for " + host + ":" + port);
 
-		if (!CommonUtils.waitForPort(host, port, containerStartTimeout)) {
+		if (!CommonUtils.waitForPortOpen(host, port, containerStartTimeout)) {
 		    throw new RuntimeException("Port took too long to become available");
 		}
 

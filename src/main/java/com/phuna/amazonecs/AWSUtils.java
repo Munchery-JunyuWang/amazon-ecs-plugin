@@ -71,23 +71,28 @@ public class AWSUtils {
 	// return client;
 	// }
 
-	public static Container waitForContainer(AwsCloud cloud,
+        public static Container getContainer(AwsCloud cloud, String taskArn) {
+	        DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud,
+								  taskArn);
+		if (dtrr.getTasks().size() == 0
+		    || dtrr.getTasks().get(0).getContainers().size() == 0) {
+		    throw new RuntimeException("No container found for task ARN: "
+					       + taskArn);
+		}
+		return dtrr.getTasks().get(0).getContainers().get(0);
+	}
+
+	public static boolean waitForContainer(AwsCloud cloud,
 						 String taskArn,
-						 int containerStartTimeout) {
+						 int containerStartTimeout,
+						 String status) {
 		Container ctn = null;
 		do {
-			DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud,
-					taskArn);
-			if (dtrr.getTasks().size() == 0
-					|| dtrr.getTasks().get(0).getContainers().size() == 0) {
-				throw new RuntimeException("No container found for task ARN: "
-						+ taskArn);
+			ctn = AWSUtils.getContainer(cloud, taskArn);
+			if (ctn.getLastStatus().equalsIgnoreCase(status)) {
+				return true;
 			}
-			ctn = dtrr.getTasks().get(0).getContainers().get(0);
-			if (ctn.getLastStatus().equalsIgnoreCase("RUNNING")) {
-				return ctn;
-			}
-			logger.info("Wait for container's RUNNING");
+			logger.info("Wait for container's " + status); 
 			try {
 				Thread.sleep(Constants.WAIT_TIME_MS);
 			} catch (InterruptedException e) {
@@ -95,18 +100,12 @@ public class AWSUtils {
 			}
 			containerStartTimeout -= Constants.WAIT_TIME_MS;
 		} while (containerStartTimeout > 0);
-		return ctn;
+		return false;
 	}
 
 	public static int getContainerExternalSSHPort(AwsCloud cloud,
 			String taskArn) {
-		DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud, taskArn);
-		if (dtrr.getTasks().size() == 0
-				|| dtrr.getTasks().get(0).getContainers().size() == 0) {
-			throw new RuntimeException("No container found for task ARN: "
-					+ taskArn);
-		}
-		Container ctn = dtrr.getTasks().get(0).getContainers().get(0);
+		Container ctn = AWSUtils.getContainer(cloud, taskArn);
 		List<NetworkBinding> nbs = ctn.getNetworkBindings();
 		logger.info("Network binding size = " + nbs.size());
 		int port = -1;
@@ -218,7 +217,11 @@ public class AWSUtils {
 		}
 	}
 
-        public static void stopTask(AwsCloud cloud, String taskArn, boolean sameVPC, int containerStartTimeout) {
+        public static void stopTask(AwsCloud cloud, String taskArn, boolean sameVPC) {
+  	        Container ctn = AWSUtils.getContainer(cloud, taskArn);
+		logger.info("Found container for task: task = " + taskArn
+			    + ", container name = " + ctn.getName()
+			    + ", container status = " + ctn.getLastStatus());
 		String host = "";
 		if (sameVPC) {
 			host = AWSUtils.getTaskContainerPrivateAddress(cloud, taskArn);
@@ -230,37 +233,31 @@ public class AWSUtils {
 		int externalPort = AWSUtils.getContainerExternalSSHPort(cloud, taskArn);
 		logger.info("Container's mapped external SSH port = " + externalPort);
 
-		DockerClient dockerClient = DockerUtils.getDockerClient(host,
-				DockerUtils.DOCKER_PORT);
-		List<com.github.dockerjava.api.model.Container> ctnList = dockerClient
-				.listContainersCmd().exec();
-		logger.info("Number of running containers = " + ctnList.size());
+		// DockerClient dockerClient = DockerUtils.getDockerClient(host,
+		// 		DockerUtils.DOCKER_PORT);
+		// List<com.github.dockerjava.api.model.Container> ctnList = dockerClient
+		// 		.listContainersCmd().exec();
+		// logger.info("Number of running containers = " + ctnList.size());
+
+		
 
 		StopTaskRequest str = new StopTaskRequest();
 		str.setTask(taskArn);
 		cloud.getEcsClient().stopTask(str);
 
-		com.github.dockerjava.api.model.Container ctn = null;
-		for (com.github.dockerjava.api.model.Container container : ctnList) {
-			Port[] ports = container.getPorts();
-			for (Port port : ports) {
-				if (port.getPublicPort() == externalPort) {
-					ctn = container;
-					break;
-				}
-			}
-		}
-		if (ctn != null) {
-			logger.info("Found container for task: task = " + taskArn
-					+ ", container ID = " + ctn.getId()
-					+ ", container status = " + ctn.getStatus());
-			if (!DockerUtils.waitForContainerExit(dockerClient, ctn.getId(), containerStartTimeout)) {
-			    logger.warning("Container did not stop peacefully, removing with force");
-			}
-			dockerClient.removeContainerCmd(ctn.getId()).withForce().exec();
-			logger.info("Container removed");
-		} else {
-			logger.warning("Cannot find container of task " + taskArn);
+
+		// com.github.dockerjava.api.model.Container ctn = null;
+		// for (com.github.dockerjava.api.model.Container container : ctnList) {
+		// 	Port[] ports = container.getPorts();
+		// 	for (Port port : ports) {
+		// 		if (port.getPublicPort() == externalPort) {
+		// 			ctn = container;
+		// 			break;
+		// 		}
+		// 	}
+		// }
+		if (!AWSUtils.waitForContainer(cloud, taskArn, Constants.DEFAULT_CONTAINER_TIMEOUT, "STOPPED")) {
+		    logger.warning("Container did not stop in 15 seconds, check the timeout on your docker stop command");
 		}
 	}
 }

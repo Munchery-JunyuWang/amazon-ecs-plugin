@@ -192,7 +192,7 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 				ctn.getContainerArn(), // nodeDescription,
 				this.remoteFS, // remoteFs,
 				numExecutors, // numExecutors,
-			        mode, labelString, launcher, retentionStrategy, nodeProperties, containerStartTimeout);
+			        mode, labelString, launcher, retentionStrategy, nodeProperties);
 	}
 
 	public RunTaskResult provisionNew() {

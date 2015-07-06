@@ -32,7 +32,7 @@ public class CommonUtils {
 		return available;
 	}
 
-        public static boolean waitForPort(String host, int port, int containerStartTimeout) {
+        public static boolean waitForPortOpen(String host, int port, int containerStartTimeout) {
      	        while (containerStartTimeout > 0) {
 			if (isPortAvailable(host, port))
 				return true;
