@@ -19,32 +19,40 @@ public class CommonUtils {
 			socket = new Socket(host, port);
 			available = true;
 		} catch (IOException e) {
-			// no-op
+			logger.info("Catch IOException 1st");
+			logger.info(e.getMessage());
 		} finally {
 			if (socket != null) {
 				try {
 					socket.close();
 				} catch (IOException e) {
-					// no-op
+					logger.info("Catch IOException 2nd");
+					logger.info(e.getMessage());
 				}
 			}
 		}
+		logger.info("isPortAvailable: " + available);
 		return available;
 	}
 
         public static boolean waitForPort(String host, int port, int containerStartTimeout) {
-     	        while (containerStartTimeout > 0) {
-			if (isPortAvailable(host, port))
-				return true;
+        	logger.info("Entering waitForPort");
+     	    while (containerStartTimeout > 0) {
+     	    	logger.info("Container Timeout: "+Integer.toString(containerStartTimeout));
+				if (isPortAvailable(host, port)) {
+					logger.info("waitForPort: Returning true.");
+					return true;
+				}
 
-			try {
-				Thread.sleep(Constants.WAIT_TIME_MS);
-			} catch (InterruptedException e) {
-				// no-op
+				try {
+					Thread.sleep(Constants.WAIT_TIME_MS);
+				} catch (InterruptedException e) {
+					logger.info("Thread interrupt.");
+				}
+				containerStartTimeout -= Constants.WAIT_TIME_MS;
 			}
-			containerStartTimeout -= Constants.WAIT_TIME_MS;
-		}
-		return false;
+			logger.info("waitForPort: Returning false");
+			return false;
 	}
 
 	public static Map<String, List<Integer>> parsePorts(String waitPorts)

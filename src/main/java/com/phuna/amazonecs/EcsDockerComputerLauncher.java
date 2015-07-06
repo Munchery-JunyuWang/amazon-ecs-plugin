@@ -103,6 +103,7 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 		logger.info("Creating slave SSH launcher for " + host + ":" + port);
 
 		if (!CommonUtils.waitForPort(host, port, containerStartTimeout)) {
+			logger.info("inside !CommonUtils");
 		    throw new RuntimeException("Port took too long to become available");
 		}
 		logger.info("template.getCredentialsId: " + template.getCredentialsId());
