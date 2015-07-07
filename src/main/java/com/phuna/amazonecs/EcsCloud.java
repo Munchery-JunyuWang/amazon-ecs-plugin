@@ -186,8 +186,12 @@ public class EcsCloud extends Cloud implements AwsCloud {
 								}), t.getNumExecutors()));
 
 				excessWorkload -= t.getNumExecutors();
+				logger.info("excessWorkload: "+excessWorkload);
+				logger.info("getNumExecutors: "+t.getNumExecutors());
 
 			}
+
+			logger.info("NodeProvisioner.PlannedNodes List :"+r);
 			return r;
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Exception while provisioning for: "
