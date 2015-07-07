@@ -1,4 +1,4 @@
-fpackage com.phuna.amazonecs;
+package com.phuna.amazonecs;
 
 public class Constants {
 	public static final int WAIT_TIME_MS = 1000;

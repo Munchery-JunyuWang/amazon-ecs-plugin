@@ -87,18 +87,22 @@ public class AWSUtils {
 						 int timeout,
 						 String status) {
 		Container ctn = null;
+		int count = 0;
 		do {
 			ctn = AWSUtils.getContainer(cloud, taskArn);
 			if (ctn.getLastStatus().equalsIgnoreCase(status)) {
 				return true;
 			}
-			logger.info("Wait for container's " + status); 
+			if (count % 5 == 0) {
+			    logger.info("Wait for container's " + status);
+			}
 			try {
 				Thread.sleep(Constants.WAIT_TIME_MS);
 			} catch (InterruptedException e) {
 				// No-op
 			}
 			timeout -= Constants.WAIT_TIME_MS;
+			count++;
 		} while (timeout > 0);
 		return false;
 	}
@@ -238,7 +242,7 @@ public class AWSUtils {
 		cloud.getEcsClient().stopTask(str);
 
 		if (!AWSUtils.waitForContainer(cloud, taskArn, Constants.CONTAINER_STOP_TIMEOUT, "STOPPED")) {
-		    logger.warning("Container did not stop in 60 seconds, either the grace period is really long or SIGKILL did nothing.")
+		    logger.warning("Container did not stop in 60 seconds, either the grace period is really long or SIGKILL did nothing.");
 		}
 	}
 }

@@ -18,5 +18,8 @@
 	<f:entry title="${%Container Start Timeout (seconds)}" field="containerStartTimeout">
 		 <f:textbox />
 	</f:entry>
+	<f:entry title="${%Number of Executors}" field="numExecutors">
+		 <f:textbox />
+	</f:entry> 
 
 </j:jelly>

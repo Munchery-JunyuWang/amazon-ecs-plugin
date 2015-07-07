@@ -52,6 +52,7 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 	private String remoteFS; // Location on slave used as workspace for Jenkins' slave
 	// private AmazonECSClient ecsClient;
         private int containerStartTimeout;
+        private int numExecutors;
 
 	/**
 	 * The id of the credentials to use.
@@ -62,14 +63,14 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 	public EcsTaskTemplate(String taskDefinitionArn, String labelString,
 			       String remoteFS,
 			       String credentialsId,
-			       String containerStartTimeout) {
+			       String containerStartTimeout,
+			       String numExecutors) {
 		this.taskDefinitionArn = taskDefinitionArn;
 		this.labelString = labelString;
 		this.credentialsId = credentialsId;
 		this.remoteFS = Strings.isNullOrEmpty(remoteFS) ? "/home/jenkins" : remoteFS;
 		this.containerStartTimeout = Strings.isNullOrEmpty(containerStartTimeout) ? Constants.CONTAINER_START_TIMEOUT : Integer.parseInt(containerStartTimeout) * 1000;
-		
-		
+		this.numExecutors = Strings.isNullOrEmpty(numExecutors) ? 1 : Integer.parseInt(numExecutors);
 	}
 
 	public String getTaskDefinitionArn() {
@@ -129,8 +130,12 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 		return 1;
 	}
 
+        public void setNumExecutors(int numExecutors) {
+	        this.numExecutors = numExecutors;
+	}
+    
 	public int getNumExecutors() {
-		return 1;
+		return numExecutors;		
 	}
 
 	public EcsDockerSlave provision(StreamTaskListener listener)
