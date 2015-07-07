@@ -144,7 +144,6 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 
 		log.println("Launching " + this.taskDefinitionArn);
 
-		int numExecutors = 1;
 		Node.Mode mode = Node.Mode.NORMAL;
 
 		RetentionStrategy retentionStrategy = new OnceRetentionStrategy(
