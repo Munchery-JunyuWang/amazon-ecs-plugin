@@ -84,7 +84,7 @@ public class AWSUtils {
 
 	public static boolean waitForContainer(AwsCloud cloud,
 						 String taskArn,
-						 int containerStartTimeout,
+						 int timeout,
 						 String status) {
 		Container ctn = null;
 		do {
@@ -98,8 +98,8 @@ public class AWSUtils {
 			} catch (InterruptedException e) {
 				// No-op
 			}
-			containerStartTimeout -= Constants.WAIT_TIME_MS;
-		} while (containerStartTimeout > 0);
+			timeout -= Constants.WAIT_TIME_MS;
+		} while (timeout > 0);
 		return false;
 	}
 
@@ -233,31 +233,12 @@ public class AWSUtils {
 		int externalPort = AWSUtils.getContainerExternalSSHPort(cloud, taskArn);
 		logger.info("Container's mapped external SSH port = " + externalPort);
 
-		// DockerClient dockerClient = DockerUtils.getDockerClient(host,
-		// 		DockerUtils.DOCKER_PORT);
-		// List<com.github.dockerjava.api.model.Container> ctnList = dockerClient
-		// 		.listContainersCmd().exec();
-		// logger.info("Number of running containers = " + ctnList.size());
-
-		
-
 		StopTaskRequest str = new StopTaskRequest();
 		str.setTask(taskArn);
 		cloud.getEcsClient().stopTask(str);
 
-
-		// com.github.dockerjava.api.model.Container ctn = null;
-		// for (com.github.dockerjava.api.model.Container container : ctnList) {
-		// 	Port[] ports = container.getPorts();
-		// 	for (Port port : ports) {
-		// 		if (port.getPublicPort() == externalPort) {
-		// 			ctn = container;
-		// 			break;
-		// 		}
-		// 	}
-		// }
-		if (!AWSUtils.waitForContainer(cloud, taskArn, Constants.DEFAULT_CONTAINER_TIMEOUT, "STOPPED")) {
-		    logger.warning("Container did not stop in 15 seconds, check the timeout on your docker stop command");
+		if (!AWSUtils.waitForContainer(cloud, taskArn, Constants.CONTAINER_STOP_TIMEOUT, "STOPPED")) {
+		    logger.warning("Container did not stop in 60 seconds, either the grace period is really long or SIGKILL did nothing.")
 		}
 	}
 }
