@@ -71,7 +71,7 @@ public class AWSUtils {
 	// return client;
 	// }
 
-        public static Container getContainer(AwsCloud cloud, String taskArn) {
+        public static Container getContainer(EcsCloud cloud, String taskArn) {
 	        DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud,
 								  taskArn);
 		if (dtrr.getTasks().size() == 0
@@ -82,7 +82,7 @@ public class AWSUtils {
 		return dtrr.getTasks().get(0).getContainers().get(0);
 	}
 
-	public static boolean waitForContainer(AwsCloud cloud,
+	public static boolean waitForContainer(EcsCloud cloud,
 						 String taskArn,
 						 int timeout,
 						 String status) {
@@ -107,7 +107,7 @@ public class AWSUtils {
 		return false;
 	}
 
-	public static int getContainerExternalSSHPort(AwsCloud cloud,
+	public static int getContainerExternalSSHPort(EcsCloud cloud,
 			String taskArn) {
 		Container ctn = AWSUtils.getContainer(cloud, taskArn);
 		List<NetworkBinding> nbs = ctn.getNetworkBindings();
@@ -128,9 +128,10 @@ public class AWSUtils {
 		return port;
 	}
 
-	public static DescribeTasksResult describeTasks(AwsCloud cloud,
+	public static DescribeTasksResult describeTasks(EcsCloud cloud,
 			String... tasksArn) {
 		DescribeTasksRequest dtr = new DescribeTasksRequest();
+		dtr.setCluster(cloud.getCluster());
 		List<String> taskArnList = new ArrayList<String>();
 		for (int i = 0; i < tasksArn.length; i++) {
 			taskArnList.add(tasksArn[i]);
@@ -140,8 +141,9 @@ public class AWSUtils {
 	}
 
 	public static DescribeContainerInstancesResult describeContainerInstances(
-			AwsCloud cloud, String... containerInstancesArn) {
+			EcsCloud cloud, String... containerInstancesArn) {
 		DescribeContainerInstancesRequest dcir = new DescribeContainerInstancesRequest();
+		dcir.setCluster(cloud.getCluster());
 		List<String> containerInstanceArnList = new ArrayList<String>();
 		for (int i = 0; i < containerInstancesArn.length; i++) {
 			containerInstanceArnList.add(containerInstancesArn[i]);
@@ -151,7 +153,7 @@ public class AWSUtils {
 	}
 
 	public static DescribeInstancesResult describeInstances(
-			AwsCloud cloud, String... ec2InstanceIds) {
+			EcsCloud cloud, String... ec2InstanceIds) {
 		DescribeInstancesRequest dir = new DescribeInstancesRequest();
 		List<String> ec2InstanceIdList = new ArrayList<String>();
 		for (int i = 0; i < ec2InstanceIds.length; i++) {
@@ -162,7 +164,7 @@ public class AWSUtils {
 	}
 
 	public static DescribeInstancesResult describeInstancesOfTask(
-			AwsCloud cloud, String taskArn) {
+			EcsCloud cloud, String taskArn) {
 		DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud, taskArn);
 		if (dtrr.getTasks().size() == 0) {
 			throw new RuntimeException("No task found for task ARN: " + taskArn);
@@ -183,7 +185,7 @@ public class AWSUtils {
 	}
 
 	public static String getTaskContainerPrivateAddress(
-			AwsCloud cloud, String taskArn) {
+			EcsCloud cloud, String taskArn) {
 		DescribeInstancesResult dirr = AWSUtils.describeInstancesOfTask(
 				cloud, taskArn);
 		if (dirr.getReservations().size() == 0
@@ -196,7 +198,7 @@ public class AWSUtils {
 	}
 
 	public static String getTaskContainerPublicAddress(
-			AwsCloud cloud, String taskArn) {
+			EcsCloud cloud, String taskArn) {
 		DescribeInstancesResult dirr = AWSUtils.describeInstancesOfTask(
 				cloud, taskArn);
 		if (dirr.getReservations().size() == 0
@@ -208,20 +210,21 @@ public class AWSUtils {
 				.getPublicIpAddress();
 	}
 
-	public static void cleanUpTasks(AwsCloud cloud, RunTaskResult rtr) {
+	public static void cleanUpTasks(EcsCloud cloud, RunTaskResult rtr) {
 		logger.info("*** Cleanup tasks");
 		StopTaskRequest str = null;
 		if (rtr.getTasks().size() != 0) {
 			List<Task> tasks = rtr.getTasks();
 			for (Task task : tasks) {
 				str = new StopTaskRequest();
+				str.setCluster(cloud.getCluster());
 				str.setTask(task.getTaskArn());
 				cloud.getEcsClient().stopTask(str);
 			}
 		}
 	}
 
-        public static void stopTask(AwsCloud cloud, String taskArn, boolean sameVPC) {
+        public static void stopTask(EcsCloud cloud, String taskArn, boolean sameVPC) {
   	        Container ctn = AWSUtils.getContainer(cloud, taskArn);
 		logger.info("Found container for task: task = " + taskArn
 			    + ", container name = " + ctn.getName()
@@ -238,6 +241,7 @@ public class AWSUtils {
 		logger.info("Container's mapped external SSH port = " + externalPort);
 
 		StopTaskRequest str = new StopTaskRequest();
+		str.setCluster(cloud.getCluster());
 		str.setTask(taskArn);
 		cloud.getEcsClient().stopTask(str);
 
