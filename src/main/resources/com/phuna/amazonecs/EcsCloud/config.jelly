@@ -16,7 +16,11 @@
 
 	<f:entry title="${%Cluster Region Id}">
 		  <f:textbox field="clusterRegionId"/>
-	</f:entry> 
+	</f:entry>
+
+	<f:entry title="${%Cluster}">
+	 	  <f:textbox field="cluster"/>
+	</f:entry>
 	
 	<f:validateButton title="${%Test Connection}"
 		progress="${%Testing...}" method="testConnection" with="accessKeyId,secretAccessKey,clusterRegionId" />
