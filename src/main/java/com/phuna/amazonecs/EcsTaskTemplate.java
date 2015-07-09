@@ -204,6 +204,7 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 
 		// Use Amazon ECS' default scheduler
 		RunTaskRequest request = new RunTaskRequest();
+		request.setCluster(getParent().getCluster());
 		request.setTaskDefinition(taskDefinitionArn);
 
 		AmazonECSClient client = getParent().getEcsClient();

@@ -31,6 +31,7 @@ import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
 import com.google.common.base.Throwables;
+import com.google.common.base.Strings;
 
 public class EcsCloud extends Cloud implements AwsCloud {
 
@@ -40,6 +41,7 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	private String accessKeyId;
 	private String secretAccessKey;
         private String clusterRegionId;
+        private String cluster;
 	private List<EcsTaskTemplate> templates;
 	private boolean sameVPC;
 	private AWSCredentials awsCredentials;
@@ -70,6 +72,14 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	        this.clusterRegionId = clusterRegionId;
         }
 
+        public String getCluster() {
+	       return cluster;
+	}
+
+        public void setCluster(String cluster) {
+	       this.cluster = cluster;
+	}
+    
 	public List<EcsTaskTemplate> getTemplates() {
 		return templates;
 	}
@@ -94,14 +104,15 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	}
 	
 	@DataBoundConstructor
-	public EcsCloud(String accessKeyId, String secretAccessKey, String clusterRegionId,
+	public EcsCloud(String accessKeyId, String secretAccessKey, String clusterRegionId, String cluster,
 			List<EcsTaskTemplate> templates, String name, boolean sameVPC) {
 		super(name);
 		logger.warning("*** EcsCloud databound constructor");
 		this.accessKeyId = accessKeyId;
 		this.secretAccessKey = secretAccessKey;
 		this.clusterRegionId = clusterRegionId;
-		this.sameVPC = sameVPC;		
+		this.sameVPC = sameVPC;
+		this.cluster = Strings.isNullOrEmpty(cluster) ? "default" : cluster;
 		
 		awsCredentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
 		
@@ -184,8 +195,11 @@ public class EcsCloud extends Cloud implements AwsCloud {
 								    }), t.getNumExecutors()));
 				
 				excessWorkload -= t.getNumExecutors();
-				
+				logger.info("excessWorkload: "+excessWorkload);
+				logger.info("getNumExecutors: "+t.getNumExecutors());
 			}
+
+			logger.info("NodeProvisioner.PlannedNodes List :"+r);
 			return r;
 		} catch (Exception e) {
 		    logger.log(Level.SEVERE, "Exception while provisioning for: "

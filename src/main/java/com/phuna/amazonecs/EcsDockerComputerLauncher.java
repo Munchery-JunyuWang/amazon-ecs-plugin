@@ -58,7 +58,7 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 		int port = -1;
 		String host = "";
 		
-		AwsCloud cloud = template.getParent();
+		EcsCloud cloud = template.getParent();
 		
 		// Wait until container's status becomes RUNNING
 		if (!AWSUtils.waitForContainer(cloud, taskArn, containerStartTimeout, "RUNNING")) {
