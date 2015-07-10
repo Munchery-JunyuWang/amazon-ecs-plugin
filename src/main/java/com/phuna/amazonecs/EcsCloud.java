@@ -164,65 +164,62 @@ public class EcsCloud extends Cloud implements AwsCloud {
 									public Node call() throws Exception {
 										EcsDockerSlave slave = null;
 										try {
-											slave = t
-													.provision(new StreamTaskListener(
-															System.out));
-											final Jenkins jenkins = Jenkins
-													.getInstance();
-											// TODO once the baseline is 1.592+
-											// switch to Queue.withLock
-											synchronized (jenkins.getQueue()) {
-												jenkins.addNode(slave);
-											}
-											// Docker instances may have a long
-											// init script. If we declare
-											// the provisioning complete by
-											// returning without the connect
-											// operation, NodeProvisioner may
-											// decide that it still wants
-											// one more instance, because it
-											// sees that (1) all the slaves
-											// are offline (because it's still
-											// being launched) and
-											// (2) there's no capacity
-											// provisioned yet.
-											//
-											// deferring the completion of
-											// provisioning until the launch
-											// goes successful prevents this
-											// problem.
-											slave.toComputer().connect(false)
-													.get();
-											return slave;
+										    slave = t.provision(new StreamTaskListener(System.out));
+										    final Jenkins jenkins = Jenkins
+											.getInstance();
+										    // TODO once the baseline is 1.592+
+										    // switch to Queue.withLock
+										    synchronized (jenkins.getQueue()) {
+											jenkins.addNode(slave);
+										    }
+										    // Docker instances may have a long
+										    // init script. If we declare
+										    // the provisioning complete by
+										    // returning without the connect
+										    // operation, NodeProvisioner may
+										    // decide that it still wants
+										    // one more instance, because it
+										    // sees that (1) all the slaves
+										    // are offline (because it's still
+										    // being launched) and
+										    // (2) there's no capacity
+										    // provisioned yet.
+										    //
+										    // deferring the completion of
+										    // provisioning until the launch
+										    // goes successful prevents this
+										    // problem.
+										    slave.toComputer().connect(false)
+											.get();
+										    return slave;
 										} catch (Exception ex) {
-											logger.log(Level.SEVERE,
-													"Error in provisioning; slave="
-															+ slave
-															+ ", template=" + t);
-
-											ex.printStackTrace();
-											throw Throwables.propagate(ex);
+										    logger.log(Level.SEVERE,
+											       "Error in provisioning; slave="
+											       + slave
+											       + ", template=" + t);
+										    
+										    ex.printStackTrace();
+										    throw Throwables.propagate(ex);
 										} finally {
-											// TODO Decrease container counter??
+										    // TODO Decrease container counter??
 										}
 									}
-								}), t.getNumExecutors()));
-
+								    }), t.getNumExecutors()));
+				
 				excessWorkload -= t.getNumExecutors();
 				logger.info("excessWorkload: "+excessWorkload);
 				logger.info("getNumExecutors: "+t.getNumExecutors());
-
 			}
 
 			logger.info("NodeProvisioner.PlannedNodes List :"+r);
 			return r;
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception while provisioning for: "
-					+ label, e);
-			return Collections.emptyList();
+		    logger.log(Level.SEVERE, "Exception while provisioning for: "
+			       + label, e);
+		    return Collections.emptyList();
 		}
 	}
-
+    
 	@Override
 	public boolean canProvision(Label label) {
 
