@@ -59,7 +59,7 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 	}
 
 	state.recordPendingLaunches(additionalCapacities);
-	return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+	return StrategyDecision.PROVISIONING_COMPLETED;
     }
 
 }

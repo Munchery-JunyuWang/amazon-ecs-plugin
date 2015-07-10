@@ -34,9 +34,10 @@ import com.amazonaws.services.ecs.model.Container;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
-import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
+import com.amazonaws.services.ecs.model.DescribeClustersResult;
 import com.amazonaws.services.ecs.model.ContainerInstance;
 import com.amazonaws.services.ecs.model.Task;
+import com.amazonaws.services.ecs.model.Cluster;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserListBoxModel;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -206,8 +207,10 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 	}
 
         public void launchInstanceIfNone() {
-	    DescribeContainerInstancesResult result = AWSUtils.describeContainerInstances(getParent(), new String[0]);
-	    if (result.getContainerInstances().size() == 0) {
+	    DescribeClustersResult result = AWSUtils.describeCluster(getParent());
+	    Cluster c = result.getClusters().get(0);
+	    c.getRegisteredContainerInstancesCount();
+	    if (result.getClusters().get(0).getRegisteredContainerInstancesCount() == 0) {
 		AWSUtils.startContainerInstance(getParent());
 	    }
 	}

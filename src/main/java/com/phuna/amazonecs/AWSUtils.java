@@ -6,6 +6,8 @@ import java.util.logging.Logger;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ecs.model.DescribeClustersRequest;
+import com.amazonaws.services.ecs.model.DescribeClustersResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ecs.AmazonECSClient;
@@ -185,6 +187,17 @@ public class AWSUtils {
 				.getEc2InstanceId();
 
 		return AWSUtils.describeInstances(cloud, ec2InstanceId);
+	}
+
+        public static DescribeClustersResult describeCluster(EcsCloud cloud) {
+	        DescribeClustersRequest request = new DescribeClustersRequest().withClusters(cloud.getCluster());
+		AmazonECSClient client = cloud.getEcsClient();
+		DescribeClustersResult result = client.describeClusters(request);
+		if (result.getClusters().size() == 0) {
+		    throw new RuntimeException("No clusters found for cluster name " +
+					       cloud.getCluster());
+		}
+		return result;
 	}
 
 	public static String getTaskContainerPrivateAddress(
