@@ -15,9 +15,12 @@ import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
 import com.amazonaws.services.ecs.model.DescribeTasksRequest;
 import com.amazonaws.services.ecs.model.DescribeTasksResult;
 import com.amazonaws.services.ecs.model.NetworkBinding;
+import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.Task;
+import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
+import com.amazonaws.services.autoscaling.model.SetDesiredCapacityRequest;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container.Port;
 
@@ -224,6 +227,23 @@ public class AWSUtils {
 		}
 	}
 
+        public static void startContainerInstance(EcsCloud cloud) {
+	        SetDesiredCapacityRequest request = new SetDesiredCapacityRequest()
+		    .withAutoScalingGroupName(cloud.getAutoScalingGroupName())
+		    .withDesiredCapacity(Constants.CLUSTER_INITIALIZATION_SIZE);
+		
+		AmazonAutoScalingClient client = cloud.getAutoScalingClient();
+		client.setDesiredCapacity(request);
+	}
+
+        public static RunTaskResult startTask(EcsCloud cloud, String taskArn) {
+	        RunTaskRequest request = new RunTaskRequest()
+		    .withCluster(cloud.getCluster())
+		    .withTaskDefinition(taskArn);
+		AmazonECSClient client = cloud.getEcsClient();
+		return client.runTask(request);
+	}
+    
         public static void stopTask(EcsCloud cloud, String taskArn, boolean sameVPC) {
   	        Container ctn = AWSUtils.getContainer(cloud, taskArn);
 		logger.info("Found container for task: task = " + taskArn

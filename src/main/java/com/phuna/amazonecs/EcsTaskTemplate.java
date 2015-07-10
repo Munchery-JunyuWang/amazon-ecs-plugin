@@ -34,6 +34,8 @@ import com.amazonaws.services.ecs.model.Container;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
+import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
+import com.amazonaws.services.ecs.model.ContainerInstance;
 import com.amazonaws.services.ecs.model.Task;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserListBoxModel;
@@ -144,6 +146,10 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 
 		log.println("Launching " + this.taskDefinitionArn);
 
+		if (!Strings.isNullOrEmpty(getParent().getAutoScalingGroupName())) {
+		    launchInstanceIfNone();
+		}
+
 		Node.Mode mode = Node.Mode.NORMAL;
 
 		RetentionStrategy retentionStrategy = new OnceRetentionStrategy(
@@ -153,7 +159,7 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 
 		// Start a ECS task, then get task information to pass to
 		// DockerComputerLauncher
-		RunTaskResult result = provisionNew();
+		RunTaskResult result = AWSUtils.startTask(getParent(), taskDefinitionArn);
 		if (result.getTasks().size() == 0) {
 			// Error occured, no tasks created
 			result.getFailures();
@@ -199,16 +205,11 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 			        mode, labelString, launcher, retentionStrategy, nodeProperties);
 	}
 
-	public RunTaskResult provisionNew() {
-		// logger.warning("parent = " + parent);
-
-		// Use Amazon ECS' default scheduler
-		RunTaskRequest request = new RunTaskRequest();
-		request.setCluster(getParent().getCluster());
-		request.setTaskDefinition(taskDefinitionArn);
-
-		AmazonECSClient client = getParent().getEcsClient();
-		return client.runTask(request);
+        public void launchInstanceIfNone() {
+	    DescribeContainerInstancesResult result = AWSUtils.describeContainerInstances(getParent(), new String[0]);
+	    if (result.getContainerInstances().size() == 0) {
+		AWSUtils.startContainerInstance(getParent());
+	    }
 	}
 
 	@Override
