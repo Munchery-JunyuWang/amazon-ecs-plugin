@@ -44,6 +44,7 @@ public class EcsCloud extends Cloud implements AwsCloud {
         private String clusterRegionId;
         private String cluster;
         private String autoScalingGroupName;
+        private int containerInstanceLaunchTimeout;
 	private List<EcsTaskTemplate> templates;
 	private boolean sameVPC;
 	private AWSCredentials awsCredentials;
@@ -85,9 +86,17 @@ public class EcsCloud extends Cloud implements AwsCloud {
         public String getAutoScalingGroupName() {
 	       return autoScalingGroupName;
 	}
-
+    
         public void setAutoScalingGroupName(String autoScalingGroupName) {
 	       this.autoScalingGroupName = autoScalingGroupName;
+	}
+
+        public int getContainerInstanceLaunchTimeout() {
+	       return containerInstanceLaunchTimeout;
+	}
+
+        public void setContainerInstanceLaunchTimeout(int containerInstanceLaunchTimeout) {
+	       this.containerInstanceLaunchTimeout = containerInstanceLaunchTimeout;
 	}
     
 	public List<EcsTaskTemplate> getTemplates() {
@@ -115,7 +124,7 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	
 	@DataBoundConstructor
 	public EcsCloud(String accessKeyId, String secretAccessKey, String clusterRegionId,
-			String cluster, String autoScalingGroupName,
+			String cluster, String autoScalingGroupName, String containerInstanceLaunchTimeout,
 			List<EcsTaskTemplate> templates, String name, boolean sameVPC) {
 		super(name);
 		logger.warning("*** EcsCloud databound constructor");
@@ -125,6 +134,8 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		this.sameVPC = sameVPC;
 		this.cluster = Strings.isNullOrEmpty(cluster) ? "default" : cluster;
 		this.autoScalingGroupName = autoScalingGroupName;
+		this.containerInstanceLaunchTimeout = Strings.isNullOrEmpty(containerInstanceLaunchTimeout) ?
+		    Constants.CONTAINER_INSTANCE_LAUNCH_TIMEOUT : Integer.parseInt(containerInstanceLaunchTimeout) * 1000;
 		
 		awsCredentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
 		
@@ -270,14 +281,14 @@ public class EcsCloud extends Cloud implements AwsCloud {
 
         public AmazonAutoScalingClient getAutoScalingClient() {
 	        AmazonAutoScalingClient client = new AmazonAutoScalingClient(getAwsCredentials());
-		String endpoint = "https://ec2." + clusterRegionId + ".amazonaws.com";
+		String endpoint = "https://autoscaling." + clusterRegionId + ".amazonaws.com";
 		client.setEndpoint(endpoint);
 		return client;	
 	}
 
         public static AmazonAutoScalingClient getAutoScalingClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
 	        AmazonAutoScalingClient client = new AmazonAutoScalingClient(new BasicAWSCredentials(accessKeyId, secretAccessKey));
-		String endpoint = "https://ec2." + clusterRegionId + ".amazonaws.com";
+		String endpoint = "https://autoscaling." + clusterRegionId + ".amazonaws.com";
 		client.setEndpoint(endpoint);
 		return client;	
 	}

@@ -21,6 +21,7 @@ import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.Task;
+import com.amazonaws.services.ecs.model.Cluster;
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
 import com.amazonaws.services.autoscaling.model.SetDesiredCapacityRequest;
 import com.github.dockerjava.api.DockerClient;
@@ -109,6 +110,28 @@ public class AWSUtils {
 			timeout -= Constants.WAIT_TIME_MS;
 			count++;
 		} while (timeout > 0);
+		return false;
+	}
+
+        public static boolean waitForRegisteredContainerInstance(EcsCloud cloud, int timeout) {
+	        DescribeClustersResult result = AWSUtils.describeCluster(cloud);
+		Cluster cluster = result.getClusters().get(0);
+		int count = 0;
+		do {
+		    if (cluster.getRegisteredContainerInstancesCount() > 0) {
+			return true;
+		    }
+		    if (count % 5 == 0) {
+			logger.info("Waiting for container instance to start");
+		    }
+		    try {
+			Thread.sleep(Constants.WAIT_TIME_MS);
+		    } catch (InterruptedException e) {
+			// No-op
+		    }
+		    timeout -= Constants.WAIT_TIME_MS;
+		    count++;
+			} while (timeout > 0);
 		return false;
 	}
 

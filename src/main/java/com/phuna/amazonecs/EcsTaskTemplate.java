@@ -120,11 +120,11 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 		this.remoteFS = remoteFS;
 	}
 
-        public int getBuildTimeout() {
+        public int getContainerStartTimeout() {
 	        return containerStartTimeout;
         }
 
-        public void setBuildTimeout(int containerStartTimeout) {
+        public void setContainerStartTimeout(int containerStartTimeout) {
 	        this.containerStartTimeout = containerStartTimeout;
         }
 
@@ -212,6 +212,9 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 	    c.getRegisteredContainerInstancesCount();
 	    if (result.getClusters().get(0).getRegisteredContainerInstancesCount() == 0) {
 		AWSUtils.startContainerInstance(getParent());
+	    }
+	    if (!AWSUtils.waitForRegisteredContainerInstance(getParent(), getParent().getContainerInstanceLaunchTimeout())) {
+		throw new RuntimeException("Container instance took too long to start");
 	    }
 	}
 

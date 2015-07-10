@@ -24,7 +24,11 @@
 
 	<f:entry title="${%Auto Scaling Group Name}">
 	   	  <f:textbox field="autoScalingGroupName"/>
-	</f:entry>   
+	</f:entry>
+
+	<f:entry title="%{%Container Instance Launch Timeout}">
+		 <f:textbox field="containerInstanceLaunchTimeout"/>
+	</f:entry>
 	
 	<f:validateButton title="${%Test Connection}"
 		progress="${%Testing...}" method="testConnection" with="accessKeyId,secretAccessKey,clusterRegionId" />
