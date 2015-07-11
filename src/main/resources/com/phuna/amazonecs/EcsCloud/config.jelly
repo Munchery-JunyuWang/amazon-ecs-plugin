@@ -26,7 +26,7 @@
 	   	  <f:textbox field="autoScalingGroupName"/>
 	</f:entry>
 
-	<f:entry title="%{%Container Instance Launch Timeout}">
+	<f:entry title="${%Container Instance Launch Timeout}">
 		 <f:textbox field="containerInstanceLaunchTimeout"/>
 	</f:entry>
 	

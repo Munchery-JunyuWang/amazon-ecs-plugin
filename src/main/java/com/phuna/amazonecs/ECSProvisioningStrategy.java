@@ -10,6 +10,7 @@ import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.Cloud;
 import hudson.model.LoadStatistics.LoadStatisticsSnapshot;
 import jenkins.model.Jenkins;
+import com.phuna.amazonecs.EcsCloud;
 
 import java.util.Collection;
 
@@ -29,7 +30,7 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 	
 	Cloud cloud = null;
 	for (Cloud c : Jenkins.getInstance().clouds) {
-	    if (c.canProvision(state.getLabel())) {
+	    if (c.canProvision(state.getLabel()) && (c instanceof EcsCloud)) {
 		cloud = c;
 		break;
 	    }
