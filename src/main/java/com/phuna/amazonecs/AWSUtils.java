@@ -14,6 +14,8 @@ import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.Container;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTasksRequest;
 import com.amazonaws.services.ecs.model.DescribeTasksResult;
 import com.amazonaws.services.ecs.model.NetworkBinding;
@@ -26,6 +28,8 @@ import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
 import com.amazonaws.services.autoscaling.model.SetDesiredCapacityRequest;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container.Port;
+
+import hudson.model.Label;
 
 public class AWSUtils {
 	private static final Logger logger = Logger.getLogger(AWSUtils.class
@@ -166,6 +170,12 @@ public class AWSUtils {
 		}
 		dtr.setTasks(taskArnList);
 		return cloud.getEcsClient().describeTasks(dtr);
+	}
+
+        public static DescribeTaskDefinitionResult describeTaskDefinition(EcsCloud cloud, Label label) {
+	        String arn = cloud.getTemplate(label).getTaskDefinitionArn();
+		DescribeTaskDefinitionRequest dtdr = new DescribeTaskDefinitionRequest().withTaskDefinition(arn);
+		return cloud.getEcsClient().describeTaskDefinition(dtdr);
 	}
 
 	public static DescribeContainerInstancesResult describeContainerInstances(

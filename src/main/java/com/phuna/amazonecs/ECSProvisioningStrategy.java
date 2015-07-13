@@ -10,7 +10,11 @@ import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.Cloud;
 import hudson.model.LoadStatistics.LoadStatisticsSnapshot;
 import jenkins.model.Jenkins;
+
 import com.phuna.amazonecs.EcsCloud;
+import com.phuna.amazonecs.AWSUtils;
+
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 
 import java.util.Collection;
 
@@ -28,14 +32,17 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 	    return StrategyDecision.PROVISIONING_COMPLETED;
 	}
 	
-	Cloud cloud = null;
+	EcsCloud cloud = null;
 	for (Cloud c : Jenkins.getInstance().clouds) {
 	    if (c.canProvision(state.getLabel()) && (c instanceof EcsCloud)) {
-		cloud = c;
+		cloud = (EcsCloud) c;
 		break;
 	    }
 	}
-	int workloadToProvision = 1;
+
+	DescribeTaskDefinitionResult result = AWSUtils.describeTaskDefinition(cloud, state.getLabel());
+	
+	int workloadToProvision = result.getTaskDefinition().getContainerDefinitions().size();
 
 	/** we will want to create a cloudprovisioninglistener that checks to see if a new container can
 	 *  be provisioned on any of the container instances in this cloud without hitting the memory or
