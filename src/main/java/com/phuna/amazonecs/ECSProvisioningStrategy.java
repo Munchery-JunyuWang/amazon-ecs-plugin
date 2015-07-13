@@ -41,6 +41,9 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 			break;
 	    }
 	}
+	if (cloud == null) {
+	    return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+	}
 
 	DescribeTaskDefinitionResult result = AWSUtils.describeTaskDefinition(cloud, state.getLabel());
 	
