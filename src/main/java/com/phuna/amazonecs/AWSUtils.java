@@ -6,20 +6,30 @@ import java.util.logging.Logger;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ecs.model.DescribeClustersRequest;
+import com.amazonaws.services.ecs.model.DescribeClustersResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.Container;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTasksRequest;
 import com.amazonaws.services.ecs.model.DescribeTasksResult;
 import com.amazonaws.services.ecs.model.NetworkBinding;
+import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.Task;
+import com.amazonaws.services.ecs.model.Cluster;
+import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
+import com.amazonaws.services.autoscaling.model.SetDesiredCapacityRequest;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container.Port;
+
+import hudson.model.Label;
 
 public class AWSUtils {
 	private static final Logger logger = Logger.getLogger(AWSUtils.class
@@ -107,6 +117,28 @@ public class AWSUtils {
 		return false;
 	}
 
+        public static boolean waitForRegisteredContainerInstance(EcsCloud cloud, int timeout) {
+	        DescribeClustersResult result = AWSUtils.describeCluster(cloud);
+		Cluster cluster = result.getClusters().get(0);
+		int count = 0;
+		do {
+		    if (cluster.getRegisteredContainerInstancesCount() > 0) {
+			return true;
+		    }
+		    if (count % 5 == 0) {
+			logger.info("Waiting for container instance to start");
+		    }
+		    try {
+			Thread.sleep(Constants.WAIT_TIME_MS);
+		    } catch (InterruptedException e) {
+			// No-op
+		    }
+		    timeout -= Constants.WAIT_TIME_MS;
+		    count++;
+			} while (timeout > 0);
+		return false;
+	}
+
 	public static int getContainerExternalSSHPort(EcsCloud cloud,
 			String taskArn) {
 		Container ctn = AWSUtils.getContainer(cloud, taskArn);
@@ -138,6 +170,12 @@ public class AWSUtils {
 		}
 		dtr.setTasks(taskArnList);
 		return cloud.getEcsClient().describeTasks(dtr);
+	}
+
+        public static DescribeTaskDefinitionResult describeTaskDefinition(EcsCloud cloud, Label label) {
+	        String arn = cloud.getTemplate(label).getTaskDefinitionArn();
+		DescribeTaskDefinitionRequest dtdr = new DescribeTaskDefinitionRequest().withTaskDefinition(arn);
+		return cloud.getEcsClient().describeTaskDefinition(dtdr);
 	}
 
 	public static DescribeContainerInstancesResult describeContainerInstances(
@@ -184,6 +222,17 @@ public class AWSUtils {
 		return AWSUtils.describeInstances(cloud, ec2InstanceId);
 	}
 
+        public static DescribeClustersResult describeCluster(EcsCloud cloud) {
+	        DescribeClustersRequest request = new DescribeClustersRequest().withClusters(cloud.getCluster());
+		AmazonECSClient client = cloud.getEcsClient();
+		DescribeClustersResult result = client.describeClusters(request);
+		if (result.getClusters().size() == 0) {
+		    throw new RuntimeException("No clusters found for cluster name " +
+					       cloud.getCluster());
+		}
+		return result;
+	}
+
 	public static String getTaskContainerPrivateAddress(
 			EcsCloud cloud, String taskArn) {
 		DescribeInstancesResult dirr = AWSUtils.describeInstancesOfTask(
@@ -224,6 +273,23 @@ public class AWSUtils {
 		}
 	}
 
+        public static void startContainerInstance(EcsCloud cloud) {
+	        SetDesiredCapacityRequest request = new SetDesiredCapacityRequest()
+		    .withAutoScalingGroupName(cloud.getAutoScalingGroupName())
+		    .withDesiredCapacity(Constants.CLUSTER_INITIALIZATION_SIZE);
+		
+		AmazonAutoScalingClient client = cloud.getAutoScalingClient();
+		client.setDesiredCapacity(request);
+	}
+
+        public static RunTaskResult startTask(EcsCloud cloud, String taskArn) {
+	        RunTaskRequest request = new RunTaskRequest()
+		    .withCluster(cloud.getCluster())
+		    .withTaskDefinition(taskArn);
+		AmazonECSClient client = cloud.getEcsClient();
+		return client.runTask(request);
+	}
+    
         public static void stopTask(EcsCloud cloud, String taskArn, boolean sameVPC) {
   	        Container ctn = AWSUtils.getContainer(cloud, taskArn);
 		logger.info("Found container for task: task = " + taskArn

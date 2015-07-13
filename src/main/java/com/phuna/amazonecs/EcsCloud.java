@@ -29,6 +29,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClient;
+import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
 import com.google.common.base.Throwables;
 import com.google.common.base.Strings;
@@ -42,6 +43,8 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	private String secretAccessKey;
         private String clusterRegionId;
         private String cluster;
+        private String autoScalingGroupName;
+        private int containerInstanceLaunchTimeout;
 	private List<EcsTaskTemplate> templates;
 	private boolean sameVPC;
 	private AWSCredentials awsCredentials;
@@ -79,6 +82,22 @@ public class EcsCloud extends Cloud implements AwsCloud {
         public void setCluster(String cluster) {
 	       this.cluster = cluster;
 	}
+
+        public String getAutoScalingGroupName() {
+	       return autoScalingGroupName;
+	}
+    
+        public void setAutoScalingGroupName(String autoScalingGroupName) {
+	       this.autoScalingGroupName = autoScalingGroupName;
+	}
+
+        public int getContainerInstanceLaunchTimeout() {
+	       return containerInstanceLaunchTimeout;
+	}
+
+        public void setContainerInstanceLaunchTimeout(int containerInstanceLaunchTimeout) {
+	       this.containerInstanceLaunchTimeout = containerInstanceLaunchTimeout;
+	}
     
 	public List<EcsTaskTemplate> getTemplates() {
 		return templates;
@@ -104,7 +123,8 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	}
 	
 	@DataBoundConstructor
-	public EcsCloud(String accessKeyId, String secretAccessKey, String clusterRegionId, String cluster,
+	public EcsCloud(String accessKeyId, String secretAccessKey, String clusterRegionId,
+			String cluster, String autoScalingGroupName, String containerInstanceLaunchTimeout,
 			List<EcsTaskTemplate> templates, String name, boolean sameVPC) {
 		super(name);
 		logger.warning("*** EcsCloud databound constructor");
@@ -113,6 +133,9 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		this.clusterRegionId = clusterRegionId;
 		this.sameVPC = sameVPC;
 		this.cluster = Strings.isNullOrEmpty(cluster) ? "default" : cluster;
+		this.autoScalingGroupName = autoScalingGroupName;
+		this.containerInstanceLaunchTimeout = Strings.isNullOrEmpty(containerInstanceLaunchTimeout) ?
+		    Constants.CONTAINER_INSTANCE_LAUNCH_TIMEOUT : Integer.parseInt(containerInstanceLaunchTimeout) * 1000;
 		
 		awsCredentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
 		
@@ -235,7 +258,7 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		return client;
 	}
 	
-    public static AmazonECSClient getEcsClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
+        public static AmazonECSClient getEcsClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
 		AmazonECSClient client = new AmazonECSClient(new BasicAWSCredentials(accessKeyId, secretAccessKey));
 		String endpoint = "https://ecs." + clusterRegionId + ".amazonaws.com";
 		client.setEndpoint(endpoint);
@@ -249,12 +272,27 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		return client;
 	}
 	
-    public static AmazonEC2Client getEc2Client(String accessKeyId, String secretAccessKey, String clusterRegionId) {
-		AmazonEC2Client client = new AmazonEC2Client(new BasicAWSCredentials(accessKeyId, secretAccessKey));
-		String endpoint = "https://ec2." + clusterRegionId + ".amazonaws.com";
-		client.setEndpoint(endpoint);
+        public static AmazonEC2Client getEc2Client(String accessKeyId, String secretAccessKey, String clusterRegionId) {
+	        AmazonEC2Client client = new AmazonEC2Client(new BasicAWSCredentials(accessKeyId, secretAccessKey));
+	        String endpoint = "https://ec2." + clusterRegionId + ".amazonaws.com";
+	        client.setEndpoint(endpoint);
 		return client;
 	}
+
+        public AmazonAutoScalingClient getAutoScalingClient() {
+	        AmazonAutoScalingClient client = new AmazonAutoScalingClient(getAwsCredentials());
+		String endpoint = "https://autoscaling." + clusterRegionId + ".amazonaws.com";
+		client.setEndpoint(endpoint);
+		return client;	
+	}
+
+        public static AmazonAutoScalingClient getAutoScalingClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
+	        AmazonAutoScalingClient client = new AmazonAutoScalingClient(new BasicAWSCredentials(accessKeyId, secretAccessKey));
+		String endpoint = "https://autoscaling." + clusterRegionId + ".amazonaws.com";
+		client.setEndpoint(endpoint);
+		return client;	
+	}
+
 
 	@Extension
 	public static class DescriptorImpl extends Descriptor<Cloud> {

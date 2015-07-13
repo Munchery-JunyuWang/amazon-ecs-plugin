@@ -34,7 +34,10 @@ import com.amazonaws.services.ecs.model.Container;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
+import com.amazonaws.services.ecs.model.DescribeClustersResult;
+import com.amazonaws.services.ecs.model.ContainerInstance;
 import com.amazonaws.services.ecs.model.Task;
+import com.amazonaws.services.ecs.model.Cluster;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserListBoxModel;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -117,11 +120,11 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 		this.remoteFS = remoteFS;
 	}
 
-        public int getBuildTimeout() {
+        public int getContainerStartTimeout() {
 	        return containerStartTimeout;
         }
 
-        public void setBuildTimeout(int containerStartTimeout) {
+        public void setContainerStartTimeout(int containerStartTimeout) {
 	        this.containerStartTimeout = containerStartTimeout;
         }
 
@@ -144,6 +147,10 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 
 		log.println("Launching " + this.taskDefinitionArn);
 
+		if (!Strings.isNullOrEmpty(getParent().getAutoScalingGroupName())) {
+		    launchInstanceIfNone();
+		}
+
 		Node.Mode mode = Node.Mode.NORMAL;
 
 		RetentionStrategy retentionStrategy = new OnceRetentionStrategy(
@@ -153,7 +160,7 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 
 		// Start a ECS task, then get task information to pass to
 		// DockerComputerLauncher
-		RunTaskResult result = provisionNew();
+		RunTaskResult result = AWSUtils.startTask(getParent(), taskDefinitionArn);
 		if (result.getTasks().size() == 0) {
 			// Error occured, no tasks created
 			result.getFailures();
@@ -199,16 +206,16 @@ public class EcsTaskTemplate implements Describable<EcsTaskTemplate> {
 			        mode, labelString, launcher, retentionStrategy, nodeProperties);
 	}
 
-	public RunTaskResult provisionNew() {
-		// logger.warning("parent = " + parent);
-
-		// Use Amazon ECS' default scheduler
-		RunTaskRequest request = new RunTaskRequest();
-		request.setCluster(getParent().getCluster());
-		request.setTaskDefinition(taskDefinitionArn);
-
-		AmazonECSClient client = getParent().getEcsClient();
-		return client.runTask(request);
+        public void launchInstanceIfNone() {
+	    DescribeClustersResult result = AWSUtils.describeCluster(getParent());
+	    Cluster c = result.getClusters().get(0);
+	    c.getRegisteredContainerInstancesCount();
+	    if (result.getClusters().get(0).getRegisteredContainerInstancesCount() == 0) {
+		AWSUtils.startContainerInstance(getParent());
+	    }
+	    if (!AWSUtils.waitForRegisteredContainerInstance(getParent(), getParent().getContainerInstanceLaunchTimeout())) {
+		throw new RuntimeException("Container instance took too long to start");
+	    }
 	}
 
 	@Override
