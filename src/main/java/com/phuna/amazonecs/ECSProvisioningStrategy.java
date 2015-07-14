@@ -31,12 +31,14 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 	if (state.getSnapshot().getQueueLength() == 0) {
 	    return StrategyDecision.PROVISIONING_COMPLETED;
 	}
-	
+
+	logger.info("Trying to find a cloud to provision for: "+state.getLabel().getDisplayName());
 	EcsCloud cloud = null;
 	for (Cloud c : Jenkins.getInstance().clouds) {
 	    if (c.canProvision(state.getLabel()) && (c instanceof EcsCloud)) {
-		cloud = (EcsCloud) c;
-		break;
+	    	logger.info("Found cloud: "+c.getDisplayName()+" for "+state.getLabel().getDisplayName());
+			cloud = (EcsCloud) c;
+			break;
 	    }
 	}
 	if (cloud == null || state.getSnapshot().getConnectingExecutors() != 0) {
@@ -52,7 +54,7 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 	
 	for (CloudProvisioningListener cl : CloudProvisioningListener.all()) {
 	    if (cl.canProvision(cloud, state.getLabel(), workloadToProvision) != null) {
-		return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+			return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
 	    }
 	}
 	Collection<PlannedNode> additionalCapacities =
@@ -67,6 +69,16 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 		       + "executors.",
 		       new Object[]{ac.displayName, cloud.name, ac.numExecutors});
 	}
+
+	logger.info(String.format(
+		"Additional Planned Capcity: %d\nPlanned Capacity: %dAvailable Executors: %d"
+		+"\nBusy Executors: %d\nConnecting Executors: %d\nDefined Executors: %d\n Idle Executors: %d\n"
+		+"Online Executors: %d\n Queue Length: %d", 
+		state.getAdditionalPlannedCapacity(), state.getPlannedCapacityLatest(), state.getAvailableExecutorsLatest(), 
+		state.getBusyExecutorsLatest(), state.getConnectingExecutorsLatest(), state.getDefinedExecutorsLatest(), 
+		state.getIdleExecutorsLatest(), state.getOnlineExecutorsLatest(), state.getQueueLengthLatest()
+		)
+	);
 
 	state.recordPendingLaunches(additionalCapacities);
 	return StrategyDecision.PROVISIONING_COMPLETED;
