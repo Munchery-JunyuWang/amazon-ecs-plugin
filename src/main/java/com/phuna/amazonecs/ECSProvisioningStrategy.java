@@ -39,7 +39,9 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 		break;
 	    }
 	}
-
+	if (cloud == null || state.getSnapshot().getConnectingExecutors() != 0) {
+	    return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+	}
 	DescribeTaskDefinitionResult result = AWSUtils.describeTaskDefinition(cloud, state.getLabel());
 	
 	int workloadToProvision = result.getTaskDefinition().getContainerDefinitions().size();
