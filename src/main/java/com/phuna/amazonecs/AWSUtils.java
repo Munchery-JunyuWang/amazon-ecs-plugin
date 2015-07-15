@@ -259,6 +259,21 @@ public class AWSUtils {
 				.getPublicIpAddress();
 	}
 
+        public static boolean pendingTasksExist(EcsCloud cloud, String taskArn) {
+	        List<Task> tasks = describeTasks(cloud, taskArn).getTasks();
+		for (Task task : tasks) {
+		    if (task.getLastStatus().equalsIgnoreCase("PENDING")) {
+			return true;
+		    }
+		    for (Container ctn : task.getContainers()) {
+			if (ctn.getLastStatus().equalsIgnoreCase("PENDING")) {
+			    return true;
+			}
+		    }
+		}
+		return false;
+	}
+
 	public static void cleanUpTasks(EcsCloud cloud, RunTaskResult rtr) {
 		logger.info("*** Cleanup tasks");
 		StopTaskRequest str = null;

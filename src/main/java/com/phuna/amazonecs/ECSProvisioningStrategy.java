@@ -14,7 +14,7 @@ import jenkins.model.Jenkins;
 import com.phuna.amazonecs.EcsCloud;
 import com.phuna.amazonecs.AWSUtils;
 
-import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
+import com.amazonaws.services.ecs.model.TaskDefinition;
 
 import java.util.Collection;
 
@@ -41,12 +41,17 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 			break;
 	    }
 	}
-	if (cloud == null || state.getSnapshot().getConnectingExecutors() != 0) {
+	if (cloud == null) {
 	    return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
 	}
-	DescribeTaskDefinitionResult result = AWSUtils.describeTaskDefinition(cloud, state.getLabel());
 	
-	int workloadToProvision = result.getTaskDefinition().getContainerDefinitions().size();
+	TaskDefinition taskDefinition = AWSUtils.describeTaskDefinition(cloud, state.getLabel()).getTaskDefinition();
+
+	if (AWSUtils.pendingTasksExist(cloud, taskDefinition.getTaskDefinitionArn())) {
+	    return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+	}
+
+	int workloadToProvision = taskDefinition.getContainerDefinitions().size();
 
 	/** we will want to create a cloudprovisioninglistener that checks to see if a new container can
 	 *  be provisioned on any of the container instances in this cloud without hitting the memory or
@@ -70,17 +75,8 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 		       new Object[]{ac.displayName, cloud.name, ac.numExecutors});
 	}
 
-	logger.info(String.format(
-		"Additional Planned Capcity: %d\nPlanned Capacity: %dAvailable Executors: %d"
-		+"\nBusy Executors: %d\nConnecting Executors: %d\nDefined Executors: %d\n Idle Executors: %d\n"
-		+"Online Executors: %d\n Queue Length: %d", 
-		state.getAdditionalPlannedCapacity(), state.getPlannedCapacityLatest(), state.getAvailableExecutorsLatest(), 
-		state.getBusyExecutorsLatest(), state.getConnectingExecutorsLatest(), state.getDefinedExecutorsLatest(), 
-		state.getIdleExecutorsLatest(), state.getOnlineExecutorsLatest(), state.getQueueLengthLatest()
-		)
-	);
-
 	state.recordPendingLaunches(additionalCapacities);
+	logger.info("additionalCapacities have been recorded");
 	return StrategyDecision.PROVISIONING_COMPLETED;
     }
 
