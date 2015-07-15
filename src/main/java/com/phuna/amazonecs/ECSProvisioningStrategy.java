@@ -41,15 +41,11 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 			break;
 	    }
 	}
-	if (cloud == null) {
+	if (cloud == null || AWSUtils.pendingTasksExist(cloud)) {
 	    return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
 	}
 	
 	TaskDefinition taskDefinition = AWSUtils.describeTaskDefinition(cloud, state.getLabel()).getTaskDefinition();
-
-	if (AWSUtils.pendingTasksExist(cloud, taskDefinition.getTaskDefinitionArn())) {
-	    return StrategyDecision.CONSULT_REMAINING_STRATEGIES;
-	}
 
 	int workloadToProvision = taskDefinition.getContainerDefinitions().size();
 

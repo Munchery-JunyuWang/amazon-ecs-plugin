@@ -22,6 +22,8 @@ import com.amazonaws.services.ecs.model.NetworkBinding;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
+import com.amazonaws.services.ecs.model.ListTasksRequest;
+import com.amazonaws.services.ecs.model.ListTasksResult;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.Cluster;
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
@@ -259,19 +261,15 @@ public class AWSUtils {
 				.getPublicIpAddress();
 	}
 
-        public static boolean pendingTasksExist(EcsCloud cloud, String taskArn) {
-	        List<Task> tasks = describeTasks(cloud, taskArn).getTasks();
-		for (Task task : tasks) {
-		    if (task.getLastStatus().equalsIgnoreCase("PENDING")) {
-			return true;
-		    }
-		    for (Container ctn : task.getContainers()) {
-			if (ctn.getLastStatus().equalsIgnoreCase("PENDING")) {
-			    return true;
-			}
-		    }
+        public static boolean pendingTasksExist(EcsCloud cloud) {
+	        AmazonECSClient client = cloud.getEcsClient();
+ 	        ListTasksResult result = client.listTasks(new ListTasksRequest()
+							  .withCluster(cloud.getCluster())
+							  .withDesiredStatus("PENDING"));
+		if (result.getTaskArns().size() == 0) {
+		    return false;
 		}
-		return false;
+		return true;
 	}
 
 	public static void cleanUpTasks(EcsCloud cloud, RunTaskResult rtr) {
