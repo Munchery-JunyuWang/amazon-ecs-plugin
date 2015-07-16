@@ -99,14 +99,11 @@ public class AWSUtils {
 						 int timeout,
 						 String status) {
 		Container ctn = null;
-		int count = 0;
 		do {
 			ctn = AWSUtils.getContainer(cloud, taskArn);
 			if (ctn.getLastStatus().equalsIgnoreCase(status)) {
+			        logger.info("Container is " + status);
 				return true;
-			}
-			if (count % 5 == 0) {
-			    logger.info("Wait for container's " + status);
 			}
 			try {
 				Thread.sleep(Constants.WAIT_TIME_MS);
@@ -114,21 +111,20 @@ public class AWSUtils {
 				// No-op
 			}
 			timeout -= Constants.WAIT_TIME_MS;
-			count++;
 		} while (timeout > 0);
+		logger.warning("Container " + taskArn + " did not start successfully");
 		return false;
 	}
 
         public static boolean waitForRegisteredContainerInstance(EcsCloud cloud, int timeout) {
-	        DescribeClustersResult result = AWSUtils.describeCluster(cloud);
-		Cluster cluster = result.getClusters().get(0);
-		int count = 0;
+	        DescribeClustersResult result;
+		Cluster cluster;
 		do {
+		    result = AWSUtils.describeCluster(cloud);
+		    cluster = result.getClusters().get(0);
 		    if (cluster.getRegisteredContainerInstancesCount() > 0) {
+			logger.info("Container instance in " + cloud + " started successfully.");
 			return true;
-		    }
-		    if (count % 5 == 0) {
-			logger.info("Waiting for container instance to start");
 		    }
 		    try {
 			Thread.sleep(Constants.WAIT_TIME_MS);
@@ -136,8 +132,8 @@ public class AWSUtils {
 			// No-op
 		    }
 		    timeout -= Constants.WAIT_TIME_MS;
-		    count++;
 			} while (timeout > 0);
+		logger.warning("Container instance in " + cloud + " did not start successfully.");
 		return false;
 	}
 
