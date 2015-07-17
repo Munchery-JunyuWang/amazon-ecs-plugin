@@ -10,8 +10,8 @@ import java.util.logging.Logger;
 
 public class CommonUtils {
 	private static final Logger logger = Logger.getLogger(CommonUtils.class
-			.getName());
-
+	.getName());
+	
 	public static boolean isPortAvailable(String host, int port) {
 		Socket socket = null;
 		boolean available = false;
@@ -31,12 +31,12 @@ public class CommonUtils {
 		}
 		return available;
 	}
-
-        public static boolean waitForPortOpen(String host, int port, int containerStartTimeout) {
-     	        while (containerStartTimeout > 0) {
+	
+	public static boolean waitForPortOpen(String host, int port, int containerStartTimeout) {
+		while (containerStartTimeout > 0) {
 			if (isPortAvailable(host, port))
-				return true;
-
+			return true;
+			
 			try {
 				Thread.sleep(Constants.WAIT_TIME_MS);
 			} catch (InterruptedException e) {
@@ -46,20 +46,20 @@ public class CommonUtils {
 		}
 		return false;
 	}
-
+	
 	public static Map<String, List<Integer>> parsePorts(String waitPorts)
-			throws IllegalArgumentException, NumberFormatException {
+	throws IllegalArgumentException, NumberFormatException {
 		Map<String, List<Integer>> containers = new HashMap<String, List<Integer>>();
 		String[] containerPorts = waitPorts.split(System
-				.getProperty("line.separator"));
+		.getProperty("line.separator"));
 		for (String container : containerPorts) {
 			String[] idPorts = container.split(" ", 2);
 			if (idPorts.length < 2)
-				throw new IllegalArgumentException("Cannot parse " + idPorts
-						+ " as '[conainerId] [port1],[port2],...'");
+			throw new IllegalArgumentException("Cannot parse " + idPorts
+			+ " as '[conainerId] [port1],[port2],...'");
 			String containerId = idPorts[0].trim();
 			String portsStr = idPorts[1].trim();
-
+			
 			List<Integer> ports = new ArrayList<Integer>();
 			for (String port : portsStr.split(",")) {
 				ports.add(new Integer(port));
@@ -68,5 +68,5 @@ public class CommonUtils {
 		}
 		return containers;
 	}
-
+	
 }

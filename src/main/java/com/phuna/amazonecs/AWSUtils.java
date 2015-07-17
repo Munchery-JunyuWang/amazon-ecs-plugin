@@ -35,8 +35,8 @@ import hudson.model.Label;
 
 public class AWSUtils {
 	private static final Logger logger = Logger.getLogger(AWSUtils.class
-			.getName());
-
+	.getName());
+	
 	// public static AmazonECSClient getEcsClient() {
 	// AmazonECSClient client = null;
 	// if (EcsCloud.getAwsCredentials() != null) {
@@ -66,7 +66,7 @@ public class AWSUtils {
 	// client.setEndpoint(endpoint);
 	// return client;
 	// }
-
+	
 	// public static AmazonEC2Client getEc2Client() {
 	// AmazonEC2Client client = null;
 	// if (EcsCloud.getAwsCredentials() != null) {
@@ -82,27 +82,27 @@ public class AWSUtils {
 	// client.setEndpoint(endpoint);
 	// return client;
 	// }
-
-        public static Container getContainer(EcsCloud cloud, String taskArn) {
-	        DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud,
-								  taskArn);
+	
+	public static Container getContainer(EcsCloud cloud, String taskArn) {
+		DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud,
+		taskArn);
 		if (dtrr.getTasks().size() == 0
-		    || dtrr.getTasks().get(0).getContainers().size() == 0) {
-		    throw new RuntimeException("No container found for task ARN: "
-					       + taskArn);
+		|| dtrr.getTasks().get(0).getContainers().size() == 0) {
+			throw new RuntimeException("No container found for task ARN: "
+			+ taskArn);
 		}
 		return dtrr.getTasks().get(0).getContainers().get(0);
 	}
-
+	
 	public static boolean waitForContainer(EcsCloud cloud,
-						 String taskArn,
-						 int timeout,
-						 String status) {
+	String taskArn,
+	int timeout,
+	String status) {
 		Container ctn = null;
 		do {
 			ctn = AWSUtils.getContainer(cloud, taskArn);
 			if (ctn.getLastStatus().equalsIgnoreCase(status)) {
-			        logger.info("Container is " + status);
+				logger.info("Container is " + status);
 				return true;
 			}
 			try {
@@ -115,37 +115,37 @@ public class AWSUtils {
 		logger.warning("Container " + taskArn + " did not start successfully");
 		return false;
 	}
-
-        public static boolean waitForRegisteredContainerInstance(EcsCloud cloud, int timeout) {
-	        DescribeClustersResult result;
+	
+	public static boolean waitForRegisteredContainerInstance(EcsCloud cloud, int timeout) {
+		DescribeClustersResult result;
 		Cluster cluster;
 		do {
-		    result = AWSUtils.describeCluster(cloud);
-		    cluster = result.getClusters().get(0);
-		    if (cluster.getRegisteredContainerInstancesCount() > 0) {
-			logger.info("Container instance in " + cloud + " started successfully.");
-			return true;
-		    }
-		    try {
-			Thread.sleep(Constants.WAIT_TIME_MS);
-		    } catch (InterruptedException e) {
-			// No-op
-		    }
-		    timeout -= Constants.WAIT_TIME_MS;
-			} while (timeout > 0);
+			result = AWSUtils.describeCluster(cloud);
+			cluster = result.getClusters().get(0);
+			if (cluster.getRegisteredContainerInstancesCount() > 0) {
+				logger.info("Container instance in " + cloud + " started successfully.");
+				return true;
+			}
+			try {
+				Thread.sleep(Constants.WAIT_TIME_MS);
+			} catch (InterruptedException e) {
+				// No-op
+			}
+			timeout -= Constants.WAIT_TIME_MS;
+		} while (timeout > 0);
 		logger.warning("Container instance in " + cloud + " did not start successfully.");
 		return false;
 	}
-
+	
 	public static int getContainerExternalSSHPort(EcsCloud cloud,
-			String taskArn) {
+	String taskArn) {
 		Container ctn = AWSUtils.getContainer(cloud, taskArn);
 		List<NetworkBinding> nbs = ctn.getNetworkBindings();
 		logger.info("Network binding size = " + nbs.size());
 		int port = -1;
 		for (NetworkBinding nb : nbs) {
 			logger.info("Container's binding: host = " + nb.getBindIP()
-					+ ", port = " + nb.getHostPort());
+			+ ", port = " + nb.getHostPort());
 			if (nb.getContainerPort() == Constants.SSH_PORT) {
 				port = nb.getHostPort();
 				break;
@@ -153,13 +153,13 @@ public class AWSUtils {
 		}
 		if (port == -1) {
 			throw new RuntimeException(
-					"Cannot find external mapped port for SSH");
+			"Cannot find external mapped port for SSH");
 		}
 		return port;
 	}
-
+	
 	public static DescribeTasksResult describeTasks(EcsCloud cloud,
-			String... tasksArn) {
+	String... tasksArn) {
 		DescribeTasksRequest dtr = new DescribeTasksRequest();
 		dtr.setCluster(cloud.getCluster());
 		List<String> taskArnList = new ArrayList<String>();
@@ -169,15 +169,15 @@ public class AWSUtils {
 		dtr.setTasks(taskArnList);
 		return cloud.getEcsClient().describeTasks(dtr);
 	}
-
-        public static DescribeTaskDefinitionResult describeTaskDefinition(EcsCloud cloud, Label label) {
-	        String arn = cloud.getTemplate(label).getTaskDefinitionArn();
+	
+	public static DescribeTaskDefinitionResult describeTaskDefinition(EcsCloud cloud, Label label) {
+		String arn = cloud.getTemplate(label).getTaskDefinitionArn();
 		DescribeTaskDefinitionRequest dtdr = new DescribeTaskDefinitionRequest().withTaskDefinition(arn);
 		return cloud.getEcsClient().describeTaskDefinition(dtdr);
 	}
-
+	
 	public static DescribeContainerInstancesResult describeContainerInstances(
-			EcsCloud cloud, String... containerInstancesArn) {
+	EcsCloud cloud, String... containerInstancesArn) {
 		DescribeContainerInstancesRequest dcir = new DescribeContainerInstancesRequest();
 		dcir.setCluster(cloud.getCluster());
 		List<String> containerInstanceArnList = new ArrayList<String>();
@@ -187,9 +187,9 @@ public class AWSUtils {
 		dcir.setContainerInstances(containerInstanceArnList);
 		return cloud.getEcsClient().describeContainerInstances(dcir);
 	}
-
+	
 	public static DescribeInstancesResult describeInstances(
-			EcsCloud cloud, String... ec2InstanceIds) {
+	EcsCloud cloud, String... ec2InstanceIds) {
 		DescribeInstancesRequest dir = new DescribeInstancesRequest();
 		List<String> ec2InstanceIdList = new ArrayList<String>();
 		for (int i = 0; i < ec2InstanceIds.length; i++) {
@@ -198,76 +198,76 @@ public class AWSUtils {
 		dir.setInstanceIds(ec2InstanceIdList);
 		return cloud.getEc2Client().describeInstances(dir);
 	}
-
+	
 	public static DescribeInstancesResult describeInstancesOfTask(
-			EcsCloud cloud, String taskArn) {
+	EcsCloud cloud, String taskArn) {
 		DescribeTasksResult dtrr = AWSUtils.describeTasks(cloud, taskArn);
 		if (dtrr.getTasks().size() == 0) {
 			throw new RuntimeException("No task found for task ARN: " + taskArn);
 		}
 		String containerInstanceArn = dtrr.getTasks().get(0)
-				.getContainerInstanceArn();
-
+		.getContainerInstanceArn();
+		
 		DescribeContainerInstancesResult dcirr = AWSUtils
-				.describeContainerInstances(cloud, containerInstanceArn);
+		.describeContainerInstances(cloud, containerInstanceArn);
 		if (dcirr.getContainerInstances().size() == 0) {
 			throw new RuntimeException(
-					"No container instances found for task ARN: " + taskArn);
+			"No container instances found for task ARN: " + taskArn);
 		}
 		String ec2InstanceId = dcirr.getContainerInstances().get(0)
-				.getEc2InstanceId();
-
+		.getEc2InstanceId();
+		
 		return AWSUtils.describeInstances(cloud, ec2InstanceId);
 	}
-
-        public static DescribeClustersResult describeCluster(EcsCloud cloud) {
-	        DescribeClustersRequest request = new DescribeClustersRequest().withClusters(cloud.getCluster());
+	
+	public static DescribeClustersResult describeCluster(EcsCloud cloud) {
+		DescribeClustersRequest request = new DescribeClustersRequest().withClusters(cloud.getCluster());
 		AmazonECSClient client = cloud.getEcsClient();
 		DescribeClustersResult result = client.describeClusters(request);
 		if (result.getClusters().size() == 0) {
-		    throw new RuntimeException("No clusters found for cluster name " +
-					       cloud.getCluster());
+			throw new RuntimeException("No clusters found for cluster name " +
+			cloud.getCluster());
 		}
 		return result;
 	}
-
+	
 	public static String getTaskContainerPrivateAddress(
-			EcsCloud cloud, String taskArn) {
+	EcsCloud cloud, String taskArn) {
 		DescribeInstancesResult dirr = AWSUtils.describeInstancesOfTask(
-				cloud, taskArn);
+		cloud, taskArn);
 		if (dirr.getReservations().size() == 0
-				|| dirr.getReservations().get(0).getInstances().size() == 0) {
+		|| dirr.getReservations().get(0).getInstances().size() == 0) {
 			throw new RuntimeException("No EC2 instance found for task ARN: "
-					+ taskArn);
+			+ taskArn);
 		}
 		return dirr.getReservations().get(0).getInstances().get(0)
-				.getPrivateIpAddress();
+		.getPrivateIpAddress();
 	}
-
+	
 	public static String getTaskContainerPublicAddress(
-			EcsCloud cloud, String taskArn) {
+	EcsCloud cloud, String taskArn) {
 		DescribeInstancesResult dirr = AWSUtils.describeInstancesOfTask(
-				cloud, taskArn);
+		cloud, taskArn);
 		if (dirr.getReservations().size() == 0
-				|| dirr.getReservations().get(0).getInstances().size() == 0) {
+		|| dirr.getReservations().get(0).getInstances().size() == 0) {
 			throw new RuntimeException("No EC2 instance found for task ARN: "
-					+ taskArn);
+			+ taskArn);
 		}
 		return dirr.getReservations().get(0).getInstances().get(0)
-				.getPublicIpAddress();
+		.getPublicIpAddress();
 	}
-
-        public static boolean pendingTasksExist(EcsCloud cloud) {
-	        AmazonECSClient client = cloud.getEcsClient();
- 	        ListTasksResult result = client.listTasks(new ListTasksRequest()
-							  .withCluster(cloud.getCluster())
-							  .withDesiredStatus("PENDING"));
+	
+	public static boolean pendingTasksExist(EcsCloud cloud) {
+		AmazonECSClient client = cloud.getEcsClient();
+		ListTasksResult result = client.listTasks(new ListTasksRequest()
+		.withCluster(cloud.getCluster())
+		.withDesiredStatus("PENDING"));
 		if (result.getTaskArns().size() == 0) {
-		    return false;
+			return false;
 		}
 		return true;
 	}
-
+	
 	public static void cleanUpTasks(EcsCloud cloud, RunTaskResult rtr) {
 		logger.info("*** Cleanup tasks");
 		StopTaskRequest str = null;
@@ -281,29 +281,29 @@ public class AWSUtils {
 			}
 		}
 	}
-
-        public static void startContainerInstance(EcsCloud cloud) {
-	        SetDesiredCapacityRequest request = new SetDesiredCapacityRequest()
-		    .withAutoScalingGroupName(cloud.getAutoScalingGroupName())
-		    .withDesiredCapacity(Constants.CLUSTER_INITIALIZATION_SIZE);
+	
+	public static void startContainerInstance(EcsCloud cloud) {
+		SetDesiredCapacityRequest request = new SetDesiredCapacityRequest()
+		.withAutoScalingGroupName(cloud.getAutoScalingGroupName())
+		.withDesiredCapacity(Constants.CLUSTER_INITIALIZATION_SIZE);
 		
 		AmazonAutoScalingClient client = cloud.getAutoScalingClient();
 		client.setDesiredCapacity(request);
 	}
-
-        public static RunTaskResult startTask(EcsCloud cloud, String taskArn) {
-	        RunTaskRequest request = new RunTaskRequest()
-		    .withCluster(cloud.getCluster())
-		    .withTaskDefinition(taskArn);
+	
+	public static RunTaskResult startTask(EcsCloud cloud, String taskArn) {
+		RunTaskRequest request = new RunTaskRequest()
+		.withCluster(cloud.getCluster())
+		.withTaskDefinition(taskArn);
 		AmazonECSClient client = cloud.getEcsClient();
 		return client.runTask(request);
 	}
-    
-        public static void stopTask(EcsCloud cloud, String taskArn, boolean sameVPC) {
-  	        Container ctn = AWSUtils.getContainer(cloud, taskArn);
+	
+	public static void stopTask(EcsCloud cloud, String taskArn, boolean sameVPC) {
+		Container ctn = AWSUtils.getContainer(cloud, taskArn);
 		logger.info("Found container for task: task = " + taskArn
-			    + ", container name = " + ctn.getName()
-			    + ", container status = " + ctn.getLastStatus());
+		+ ", container name = " + ctn.getName()
+		+ ", container status = " + ctn.getLastStatus());
 		String host = "";
 		if (sameVPC) {
 			host = AWSUtils.getTaskContainerPrivateAddress(cloud, taskArn);
@@ -311,17 +311,17 @@ public class AWSUtils {
 			host = AWSUtils.getTaskContainerPublicAddress(cloud, taskArn);
 		}
 		logger.info("Docker host to delete container = " + host);
-
+		
 		int externalPort = AWSUtils.getContainerExternalSSHPort(cloud, taskArn);
 		logger.info("Container's mapped external SSH port = " + externalPort);
-
+		
 		StopTaskRequest str = new StopTaskRequest();
 		str.setCluster(cloud.getCluster());
 		str.setTask(taskArn);
 		cloud.getEcsClient().stopTask(str);
-
+		
 		if (!AWSUtils.waitForContainer(cloud, taskArn, Constants.CONTAINER_STOP_TIMEOUT, "STOPPED")) {
-		    logger.warning("Container did not stop in 60 seconds, either the grace period is really long or SIGKILL did nothing.");
+			logger.warning("Container did not stop in 60 seconds, either the grace period is really long or SIGKILL did nothing.");
 		}
 	}
 }

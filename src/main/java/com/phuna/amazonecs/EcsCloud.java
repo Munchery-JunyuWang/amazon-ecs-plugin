@@ -35,74 +35,74 @@ import com.google.common.base.Throwables;
 import com.google.common.base.Strings;
 
 public class EcsCloud extends Cloud implements AwsCloud {
-
+	
 	private static final Logger logger = Logger.getLogger(EcsCloud.class
-			.getName());
-
+	.getName());
+	
 	private String accessKeyId;
 	private String secretAccessKey;
-        private String clusterRegionId;
-        private String cluster;
-        private String autoScalingGroupName;
-        private int containerInstanceLaunchTimeout;
+	private String clusterRegionId;
+	private String cluster;
+	private String autoScalingGroupName;
+	private int containerInstanceLaunchTimeout;
 	private List<EcsTaskTemplate> templates;
 	private boolean sameVPC;
 	private AWSCredentials awsCredentials;
-//	private AmazonECSClient ecsClient;
-
+	//	private AmazonECSClient ecsClient;
+	
 	public String getAccessKeyId() {
 		logger.warning("*** getAccessKeyId, EcsCloud = " + this);
 		return accessKeyId;
 	}
-
+	
 	public void setAccessKeyId(String accessKeyId) {
 		this.accessKeyId = accessKeyId;
 	}
-
+	
 	public String getSecretAccessKey() {
 		return secretAccessKey;
 	}
-
+	
 	public void setSecretAccessKey(String secretAccessKey) {
 		this.secretAccessKey = secretAccessKey;
 	}
-
-        public String getClusterRegionId() {
-	        return clusterRegionId;
+	
+	public String getClusterRegionId() {
+		return clusterRegionId;
 	}
-
-        public void setClusterRegionId(String clusterRegionId) {
-	        this.clusterRegionId = clusterRegionId;
-        }
-
-        public String getCluster() {
-	       return cluster;
+	
+	public void setClusterRegionId(String clusterRegionId) {
+		this.clusterRegionId = clusterRegionId;
 	}
-
-        public void setCluster(String cluster) {
-	       this.cluster = cluster;
+	
+	public String getCluster() {
+		return cluster;
 	}
-
-        public String getAutoScalingGroupName() {
-	       return autoScalingGroupName;
+	
+	public void setCluster(String cluster) {
+		this.cluster = cluster;
 	}
-    
-        public void setAutoScalingGroupName(String autoScalingGroupName) {
-	       this.autoScalingGroupName = autoScalingGroupName;
+	
+	public String getAutoScalingGroupName() {
+		return autoScalingGroupName;
 	}
-
-        public int getContainerInstanceLaunchTimeout() {
-	       return containerInstanceLaunchTimeout;
+	
+	public void setAutoScalingGroupName(String autoScalingGroupName) {
+		this.autoScalingGroupName = autoScalingGroupName;
 	}
-
-        public void setContainerInstanceLaunchTimeout(int containerInstanceLaunchTimeout) {
-	       this.containerInstanceLaunchTimeout = containerInstanceLaunchTimeout;
+	
+	public int getContainerInstanceLaunchTimeout() {
+		return containerInstanceLaunchTimeout;
 	}
-    
+	
+	public void setContainerInstanceLaunchTimeout(int containerInstanceLaunchTimeout) {
+		this.containerInstanceLaunchTimeout = containerInstanceLaunchTimeout;
+	}
+	
 	public List<EcsTaskTemplate> getTemplates() {
 		return templates;
 	}
-
+	
 	public void setTemplates(List<EcsTaskTemplate> templates) {
 		this.templates = templates;
 	}
@@ -110,11 +110,11 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	public boolean isSameVPC() {
 		return sameVPC;
 	}
-
+	
 	public void setSameVPC(boolean sameVPC) {
 		this.sameVPC = sameVPC;
 	}
-
+	
 	public AWSCredentials getAwsCredentials() {
 		if (awsCredentials == null) {
 			awsCredentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
@@ -124,8 +124,8 @@ public class EcsCloud extends Cloud implements AwsCloud {
 	
 	@DataBoundConstructor
 	public EcsCloud(String accessKeyId, String secretAccessKey, String clusterRegionId,
-			String cluster, String autoScalingGroupName, String containerInstanceLaunchTimeout,
-			List<EcsTaskTemplate> templates, String name, boolean sameVPC) {
+	String cluster, String autoScalingGroupName, String containerInstanceLaunchTimeout,
+	List<EcsTaskTemplate> templates, String name, boolean sameVPC) {
 		super(name);
 		logger.warning("*** EcsCloud databound constructor");
 		this.accessKeyId = accessKeyId;
@@ -135,13 +135,13 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		this.cluster = Strings.isNullOrEmpty(cluster) ? "default" : cluster;
 		this.autoScalingGroupName = autoScalingGroupName;
 		this.containerInstanceLaunchTimeout = Strings.isNullOrEmpty(containerInstanceLaunchTimeout) ?
-		    Constants.CONTAINER_INSTANCE_LAUNCH_TIMEOUT : Integer.parseInt(containerInstanceLaunchTimeout) * 1000;
+		Constants.CONTAINER_INSTANCE_LAUNCH_TIMEOUT : Integer.parseInt(containerInstanceLaunchTimeout) * 1000;
 		
 		awsCredentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
 		
-//		logger.warning("*** Create Ecs Client");
-//		this.ecsClient = Utils.getEcsClient(this.accessKeyId,
-//				this.secretAccessKey);
+		//		logger.warning("*** Create Ecs Client");
+		//		this.ecsClient = Utils.getEcsClient(this.accessKeyId,
+		//				this.secretAccessKey);
 		
 		if (templates != null) {
 			this.templates = templates;
@@ -151,94 +151,94 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		for (EcsTaskTemplate template : this.templates) {
 			template.setParent(this);
 		}
-
+		
 	}
-
+	
 	@Override
 	public Collection<PlannedNode> provision(Label label, int excessWorkload) {
 		try {
 			logger.warning("*** provision, EcsCloud = " + this);
 			logger.log(Level.INFO, "Asked to provision {0} slave(s) for: {1}",
-					new Object[] { excessWorkload, label });
-
+			new Object[] { excessWorkload, label });
+			
 			List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
-
+			
 			final EcsTaskTemplate t = getTemplate(label);
-
+			
 			logger.log(Level.INFO, "Will provision \"{0}\" for: {1}",
-					new Object[] { t.getTaskDefinitionArn(), label });
-
+			new Object[] { t.getTaskDefinitionArn(), label });
+			
 			while (excessWorkload > 0) {
 				r.add(new NodeProvisioner.PlannedNode(t.getTaskDefinitionArn(),
-						Computer.threadPoolForRemoting
-								.submit(new Callable<Node>() {
-									public Node call() throws Exception {
-										EcsDockerSlave slave = null;
-										try {
-										    slave = t.provision(new StreamTaskListener(System.out));
-										    final Jenkins jenkins = Jenkins
-											.getInstance();
-										    // TODO once the baseline is 1.592+
-										    // switch to Queue.withLock
-										    synchronized (jenkins.getQueue()) {
-											jenkins.addNode(slave);
-										    }
-										    // Docker instances may have a long
-										    // init script. If we declare
-										    // the provisioning complete by
-										    // returning without the connect
-										    // operation, NodeProvisioner may
-										    // decide that it still wants
-										    // one more instance, because it
-										    // sees that (1) all the slaves
-										    // are offline (because it's still
-										    // being launched) and
-										    // (2) there's no capacity
-										    // provisioned yet.
-										    //
-										    // deferring the completion of
-										    // provisioning until the launch
-										    // goes successful prevents this
-										    // problem.
-										    slave.toComputer().connect(false)
-											.get();
-										    return slave;
-										} catch (Exception ex) {
-										    logger.log(Level.SEVERE,
-											       "Error in provisioning; slave="
-											       + slave
-											       + ", template=" + t);
-										    
-										    ex.printStackTrace();
-										    throw Throwables.propagate(ex);
-										} finally {
-										    // TODO Decrease container counter??
-										}
-									}
-								    }), t.getNumExecutors()));
+				Computer.threadPoolForRemoting
+				.submit(new Callable<Node>() {
+					public Node call() throws Exception {
+						EcsDockerSlave slave = null;
+						try {
+							slave = t.provision(new StreamTaskListener(System.out));
+							final Jenkins jenkins = Jenkins
+							.getInstance();
+							// TODO once the baseline is 1.592+
+							// switch to Queue.withLock
+							synchronized (jenkins.getQueue()) {
+								jenkins.addNode(slave);
+							}
+							// Docker instances may have a long
+							// init script. If we declare
+							// the provisioning complete by
+							// returning without the connect
+							// operation, NodeProvisioner may
+							// decide that it still wants
+							// one more instance, because it
+							// sees that (1) all the slaves
+							// are offline (because it's still
+							// being launched) and
+							// (2) there's no capacity
+							// provisioned yet.
+							//
+							// deferring the completion of
+							// provisioning until the launch
+							// goes successful prevents this
+							// problem.
+							slave.toComputer().connect(false)
+							.get();
+							return slave;
+						} catch (Exception ex) {
+							logger.log(Level.SEVERE,
+							"Error in provisioning; slave="
+							+ slave
+							+ ", template=" + t);
+							
+							ex.printStackTrace();
+							throw Throwables.propagate(ex);
+						} finally {
+							// TODO Decrease container counter??
+						}
+					}
+				}), t.getNumExecutors()));
 				
 				excessWorkload -= t.getNumExecutors();
 				logger.info("excessWorkload: "+excessWorkload);
 				logger.info("getNumExecutors: "+t.getNumExecutors());
 			}
-
+			
 			logger.info("NodeProvisioner.PlannedNodes List :"+r);
 			return r;
 		} catch (Exception e) {
-		    logger.log(Level.SEVERE, "Exception while provisioning for: "
-			       + label, e);
-		    return Collections.emptyList();
+			logger.log(Level.SEVERE, "Exception while provisioning for: "
+			+ label, e);
+			return Collections.emptyList();
 		}
 	}
-    
+	
 	@Override
 	public boolean canProvision(Label label) {
-
+		
 		// Set<LabelAtom> labelSet = Label.parse(labelString);
 		// return label == null || label.matches(labelSet);
 		return getTemplate(label) != null;
 	}
-
+	
 	public EcsTaskTemplate getTemplate(Label label) {
 		if (label == null && templates.size() > 0) {
 			return templates.get(0);
@@ -258,7 +258,7 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		return client;
 	}
 	
-        public static AmazonECSClient getEcsClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
+	public static AmazonECSClient getEcsClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
 		AmazonECSClient client = new AmazonECSClient(new BasicAWSCredentials(accessKeyId, secretAccessKey));
 		String endpoint = "https://ecs." + clusterRegionId + ".amazonaws.com";
 		client.setEndpoint(endpoint);
@@ -272,42 +272,42 @@ public class EcsCloud extends Cloud implements AwsCloud {
 		return client;
 	}
 	
-        public static AmazonEC2Client getEc2Client(String accessKeyId, String secretAccessKey, String clusterRegionId) {
-	        AmazonEC2Client client = new AmazonEC2Client(new BasicAWSCredentials(accessKeyId, secretAccessKey));
-	        String endpoint = "https://ec2." + clusterRegionId + ".amazonaws.com";
-	        client.setEndpoint(endpoint);
+	public static AmazonEC2Client getEc2Client(String accessKeyId, String secretAccessKey, String clusterRegionId) {
+		AmazonEC2Client client = new AmazonEC2Client(new BasicAWSCredentials(accessKeyId, secretAccessKey));
+		String endpoint = "https://ec2." + clusterRegionId + ".amazonaws.com";
+		client.setEndpoint(endpoint);
 		return client;
 	}
-
-        public AmazonAutoScalingClient getAutoScalingClient() {
-	        AmazonAutoScalingClient client = new AmazonAutoScalingClient(getAwsCredentials());
+	
+	public AmazonAutoScalingClient getAutoScalingClient() {
+		AmazonAutoScalingClient client = new AmazonAutoScalingClient(getAwsCredentials());
 		String endpoint = "https://autoscaling." + clusterRegionId + ".amazonaws.com";
 		client.setEndpoint(endpoint);
 		return client;	
 	}
-
-        public static AmazonAutoScalingClient getAutoScalingClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
-	        AmazonAutoScalingClient client = new AmazonAutoScalingClient(new BasicAWSCredentials(accessKeyId, secretAccessKey));
+	
+	public static AmazonAutoScalingClient getAutoScalingClient(String accessKeyId, String secretAccessKey, String clusterRegionId) {
+		AmazonAutoScalingClient client = new AmazonAutoScalingClient(new BasicAWSCredentials(accessKeyId, secretAccessKey));
 		String endpoint = "https://autoscaling." + clusterRegionId + ".amazonaws.com";
 		client.setEndpoint(endpoint);
 		return client;	
 	}
-
-
+	
+	
 	@Extension
 	public static class DescriptorImpl extends Descriptor<Cloud> {
 		@Override
 		public String getDisplayName() {
 			return "Amazon ECS";
 		}
-
+		
 		public FormValidation doTestConnection(
-				@QueryParameter String accessKeyId,
-				@QueryParameter String secretAccessKey,
-				@QueryParameter String clusterRegionId) {
-		        AmazonECSClient client = EcsCloud.getEcsClient(accessKeyId, secretAccessKey, clusterRegionId);
+		@QueryParameter String accessKeyId,
+		@QueryParameter String secretAccessKey,
+		@QueryParameter String clusterRegionId) {
+			AmazonECSClient client = EcsCloud.getEcsClient(accessKeyId, secretAccessKey, clusterRegionId);
 			ListContainerInstancesResult result = client.listContainerInstances();
-
+			
 			return FormValidation.ok("Success. Number of container instances: " + result.getContainerInstanceArns().size());
 		}
 		//

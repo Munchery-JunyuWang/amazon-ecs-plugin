@@ -19,30 +19,30 @@ import com.google.common.base.Preconditions;
 
 public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 	private static final Logger logger = Logger
-			.getLogger(EcsDockerComputerLauncher.class.getName());
-
+	.getLogger(EcsDockerComputerLauncher.class.getName());
+	
 	// private EcsTaskTemplate template;
-
+	
 	protected EcsDockerComputerLauncher(EcsTaskTemplate template,
-					    RunTaskResult runTaskResult,
-					    int containerStartTimeout) {
-	    super(makeLauncher(template, runTaskResult, containerStartTimeout));
+	RunTaskResult runTaskResult,
+	int containerStartTimeout) {
+		super(makeLauncher(template, runTaskResult, containerStartTimeout));
 	}
-
+	
 	private static ComputerLauncher makeLauncher(EcsTaskTemplate template,
-						     RunTaskResult runTaskResult,
-						     int containerStartTimeout) {
-	        SSHLauncher sshLauncher = getSSHLauncher(runTaskResult, template, containerStartTimeout);
+	RunTaskResult runTaskResult,
+	int containerStartTimeout) {
+		SSHLauncher sshLauncher = getSSHLauncher(runTaskResult, template, containerStartTimeout);
 		return new RetryingComputerLauncher(sshLauncher);
 	}
-
+	
 	private static SSHLauncher getSSHLauncher(RunTaskResult runTaskResult,
-						  EcsTaskTemplate template,
-						  int containerStartTimeout) {
+	EcsTaskTemplate template,
+	int containerStartTimeout) {
 		Preconditions.checkNotNull(template);
-
-//		AmazonECSClient client = CommonUtils.getEcsClient();
-
+		
+		//		AmazonECSClient client = CommonUtils.getEcsClient();
+		
 		for (Failure failure : runTaskResult.getFailures()) {
 			logger.info("Failed task: " + failure);
 		}
@@ -52,7 +52,7 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 			throw new RuntimeException("No task created");
 		}
 		String taskArn = tasks.get(0).getTaskArn();
-
+		
 		// Find host port for SSH connection
 		int sshPort = Constants.SSH_PORT;
 		int port = -1;
@@ -65,12 +65,12 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 			throw new RuntimeException("Container takes too long time to start");
 		}
 		Container ctn = AWSUtils.getContainer(cloud, taskArn);
-
+		
 		List<NetworkBinding> nbs = ctn.getNetworkBindings();
 		logger.info("Network binding size = " + nbs.size());
 		for (NetworkBinding nb : nbs) {
 			logger.info("Container's binding: host = " + nb.getBindIP() + ", port = "
-					+ nb.getHostPort());
+			+ nb.getHostPort());
 			if (nb.getContainerPort() == sshPort) {
 				port = nb.getHostPort();
 				host = nb.getBindIP();
@@ -78,20 +78,20 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 				break;
 			}
 		}
-
+		
 		if (host == "" || port == -1) {
 			logger.warning("Failed to connect to the container");
 			AWSUtils.stopTask(cloud, taskArn, template.getParent().isSameVPC());
 			throw new RuntimeException("Cannot determine host/port to SSH into");
 		}
-
+		
 		// host = "54.187.124.238";
-//		host = "172.31.4.94";
+		//		host = "172.31.4.94";
 		logger.info("container's private IP = " + AWSUtils.getTaskContainerPrivateAddress(cloud, taskArn));
 		logger.info("container's public IP = " + AWSUtils.getTaskContainerPublicAddress(cloud, taskArn));
-//		if (host.equals("0.0.0.0")) {
-//			host = CommonUtils.getTaskContainerPublicAddress(taskArn);
-//		}
+		//		if (host.equals("0.0.0.0")) {
+		//			host = CommonUtils.getTaskContainerPublicAddress(taskArn);
+		//		}
 		if (template.getParent().isSameVPC()) {
 			logger.info("Use private address");
 			host = AWSUtils.getTaskContainerPrivateAddress(cloud, taskArn);
@@ -99,26 +99,26 @@ public class EcsDockerComputerLauncher extends DelegatingComputerLauncher {
 			logger.info("Use public address");
 			host = AWSUtils.getTaskContainerPublicAddress(cloud, taskArn);
 		}
-
+		
 		logger.info("Creating slave SSH launcher for " + host + ":" + port);
-
+		
 		if (!CommonUtils.waitForPortOpen(host, port, containerStartTimeout)) {
-		    throw new RuntimeException("Port took too long to become available");
+			throw new RuntimeException("Port took too long to become available");
 		}
-
+		
 		StandardUsernameCredentials credentials = SSHLauncher
-				.lookupSystemCredentials(template.getCredentialsId());
-
+		.lookupSystemCredentials(template.getCredentialsId());
+		
 		// return new SSHLauncher();
 		return new SSHLauncher(host, port, credentials, "", // jvmOptions
-				"", // javaPath,
-				"", // prefixStartSlaveCmd
-				"", // suffixStartSlaveCmd
-				template.getSSHLaunchTimeoutMinutes() * 60);
-
+		"", // javaPath,
+		"", // prefixStartSlaveCmd
+		"", // suffixStartSlaveCmd
+		template.getSSHLaunchTimeoutMinutes() * 60);
+		
 		// } catch (Exception e) {
 		// throw new RuntimeException("Error: " + e);
 		// }
 	}
-
+	
 }

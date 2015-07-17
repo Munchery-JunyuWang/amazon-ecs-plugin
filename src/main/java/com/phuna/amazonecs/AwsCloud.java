@@ -7,5 +7,5 @@ import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
 public interface AwsCloud {
 	AmazonECSClient getEcsClient();
 	AmazonEC2Client getEc2Client();
-        AmazonAutoScalingClient getAutoScalingClient();
+	AmazonAutoScalingClient getAutoScalingClient();
 }
